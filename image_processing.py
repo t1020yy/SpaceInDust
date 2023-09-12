@@ -266,8 +266,10 @@ def process_simulation_results(simulation_results: List[Tuple[ModelingParabolaPa
 
 if __name__ == "__main__":
 
-    SIMULATION = True
-    SIMULATION_CLAIBRATION_FILENAME = "./2022-10-24/calib 24 oct 2022 2.json"
+    EXPERIMENT_NUMBER = 0
+
+    SIMULATION = False
+    SIMULATION_CLAIBRATION_FILENAME = "./exp_data/model_example/calib.json"
     
     simulation_parameters : ModelingParabolaParameters
     simulation_results = []
@@ -277,7 +279,7 @@ if __name__ == "__main__":
         with open('experiments.json', 'r', encoding='utf8') as f:
             experiments = json.load(f)
 
-        experiment = experiments[0]
+        experiment = experiments[EXPERIMENT_NUMBER]
 
         camera1_path = experiment['camera1_path']
         camera2_path = experiment['camera2_path']

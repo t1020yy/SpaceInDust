@@ -1,0 +1,38 @@
+[
+    {
+        "date": "2022-10-24 12:00:00",
+        "comment": "Пример объекта эксперимента для экспериментальных данных",
+        "voltage": 2500,
+        "particles_radius": 100e-06,
+        "particles_density": 2200,
+        "camera1_path": ".\\exp_data\\exp_example\\camera1",
+        "camera2_path": ".\\exp_data\\exp_example\\camera2",
+        "image_file_mask": "\\IMG*.tif",
+        "background_image_index": -1,
+        "path_to_calibration_data": ".\\exp_data\\exp_example\\calib.json",
+        "exposure": 30000,
+        "gain": 20,
+        "aperture": 8,
+        "initial_threshold": 5,
+        "search_area_range": 500,
+        "grid_height": 10
+    },
+    {
+        "date": "2023-03-21 15:00:00",
+        "comment": "Пример объекта эксперимента для моделирования",
+        "voltage": 2500,
+        "particles_radius": 100e-06,
+        "particles_density": 2200,
+        "camera1_path": ".\\model_example\\camera1",
+        "camera2_path": ".\\model_example\\camera2",
+        "image_file_mask": "\\*.png",
+        "background_image_index": -1,
+        "path_to_calibration_data": ".\\model_example\\calib.json",
+        "exposure": 30000,
+        "gain": 20,
+        "aperture": 8,
+        "initial_threshold": 5,
+        "search_area_range": 500,
+        "grid_height": 10
+    }
+]
