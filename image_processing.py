@@ -17,101 +17,6 @@ from connected_component import Connected_component
 from modeling_parameters import ModelingParabolaParameters
         
 
-def findEllipses(img, min_a=30, max_a=1000, threshold=20):
-    pixels = cv2.findNonZero(img)
-
-    results = []
-
-    itteration = 0
-    max_itterations = len(pixels)**3 / 2
-
-    for i in range(len(pixels[:,0,:])):
-        pixel1 = pixels[i,0,:]
-        for j in range(i, len(pixels[:,0,:])):
-            pixel2 = pixels[j,0,:]
-            a = np.linalg.norm(pixel1 - pixel2)/2 #((pixel1[0] - pixel2[0])**2 + (pixel1[1] - pixel2[1])**2)**0.5 / 2 
-            if a > min_a and a < max_a:
-                accumulator = np.zeros(2000, dtype=np.int32)
-                x0 = (pixel1[0] - pixel2[0]) / 2
-                y0 = (pixel1[1] - pixel2[1]) / 2
-                alfa = np.arctan((pixel2[1] - pixel1[1])/(pixel2[0] - pixel1[0]))
-                for pixel3 in pixels[:,0,:]:
-                    if not np.array_equal(pixel3, pixel1) and not np.array_equal(pixel3, pixel2):
-                        d = np.linalg.norm(np.array([x0, y0], dtype=np.int32) - pixel3) #((x0 - pixel3[0])**2 + (y0 - pixel3[1])**2)**0.5
-                        if d > min_a:
-                            f = np.linalg.norm(pixel2 - pixel3) #((pixel2[0] - pixel3[0])**2 + (pixel2[1] - pixel3[1])**2)**0.5
-                            tau = np.arccos((a**2 + d**2 - f**2) / (2*a*d))
-                            b = ((a**2 * d**2 * np.sin(tau)**2)/(a**2 - d**2 * np.cos(tau)**2))**0.5
-                            try:
-                                accumulator[int(b)] += 1
-                            except:
-                                pass
-                
-                if max(accumulator) > threshold:
-                    results.append([x0, y0, a, accumulator.argmax(), alfa])
-                itteration += len(pixels)
-                print(f'Itteration {itteration} from {max_itterations}')
-    return results
-
-
-def parabolaHough(img, threshold=20):
-    pixels = cv2.findNonZero(img)
-
-    results = []
-
-    accumulator = np.zeros((200,200,200))
-
-    for i in range(len(pixels[:,0,:])):
-        pixel1 = pixels[i,0,:]
-        for a in range(200):
-            for b in range(200):
-                c = pixel1[1] - a*pixel1[0]**2 - b*pixel1[0]**2
-                if c > 0 and c < 200:
-                    accumulator[a,b,int(c)] += 1
-                
-    if max(accumulator) > threshold:
-        pass
-
-    return results
-
-
-def parabola_from_contour(contour):
-
-    accumulator = []
-    contour = np.array(contour)[:,0,:]
-
-    y_max_index = contour[:,1].argmin(axis=0)
-    x_a = contour[y_max_index, 0]
-    y_a = contour[y_max_index, 1]
-
-    for point in contour:
-        a = (point[1] - y_a) / (point[0] - x_a)**2
-        if not np.isnan(a) and not np.isinf(a):
-            accumulator.append(a)
-
-    return x_a, y_a, accumulator
-
-
-def draw_parabola(img, parabola):
-
-    points = []
-    x_a = parabola[0]
-    y_a = parabola[1]
-    a = np.average(parabola[2])
-    
-    for y in range(y_a, 1200):
-        x1 = ((y - y_a) / a)**0.5 + x_a
-        x2 = - ((y - y_a) / a)**0.5 + x_a
-        if not np.isnan(x1) and not np.isnan(x2) and not np.isinf(x1) and not np.isinf(x1):
-            points.append([y, int(x1)])
-            points.append([y, int(x2)])
-        
-    for point in points:
-        img = cv2.circle(img, (point[1], point[0]), 5, (255,0,0))
-
-    return img
-
-
 def rectifyImages(img1, img2, cameraMatrix1, cameraMatrix2, distCoeffs1, distCoeffs2, R, T):
     R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(cameraMatrix1, distCoeffs1, cameraMatrix2, distCoeffs2, img1.shape[::-1], R, T, alpha=0, flags=0)
 
@@ -123,11 +28,6 @@ def rectifyImages(img1, img2, cameraMatrix1, cameraMatrix2, distCoeffs1, distCoe
     
     img_rect1 = cv2.remap(img1, mapx1, mapy1, cv2.INTER_LINEAR)#[roi1[1]:roi1[1]+height, roi1[0]:roi1[0]+width]
     img_rect2 = cv2.remap(img2, mapx2, mapy2, cv2.INTER_LINEAR)#[roi2[1]:roi2[1]+height, roi2[0]:roi2[0]+width]
-
-    #total_size = (max(img_rect1.shape[0], img_rect2.shape[0]), img_rect1.shape[1] + img_rect2.shape[1])
-    #img = np.zeros(total_size, dtype=np.uint8)
-    #img[:img_rect1.shape[0], :img_rect1.shape[1]] = img_rect1
-    #img[:img_rect2.shape[0], img_rect1.shape[1]:] = img_rect2
 
     return img_rect1, img_rect2, P1, P2
 
@@ -197,40 +97,6 @@ def get_angle_between_plane_and_camera(A, B, C):
 
     return np.degrees(angle)
 
-# def get_angle_between_plane_and_camera(A, B, C):
-#     cam1 = {
-#     'R': np.array([[1., 0., 0.],
-#                    [0, 1., 0.],
-#                    [0., 0., 1.]]),
-#     'T': np.array([0., 0., 0.]),
-#     'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
-#     'dist': np.array([0, 0, 0, 0], dtype=float)
-#     }
-
-#     # 获取相机的旋转矩阵和平移向量
-#     R = cam1['R']
-#     T = cam1['T']
-
-#     # 光轴向量表示为 [0, 0, 1]
-#     optical_axis = np.array([0, 0, 1])
-
-#     # 将光轴向量转换为相机坐标系下的向量
-#     camera_coords = np.linalg.inv(cam1['K']) @ optical_axis
-
-#     # 计算相机的位置
-#     camera_position = -R.T @ T
-
-
-#     # 计算相机到粒子所在平面的距离
-#     distance_to_plane = abs(A * camera_position[0] + B * camera_position[1] + C)
-
-#     # 计算相机与粒子所在平面的夹角
-#     angle = np.arctan(distance_to_plane / np.linalg.norm(camera_coords))
-
-#     # 将夹角转换为角度
-#     # angle_degrees = np.degrees(angle)
-#     # print(angle_degrees)
-#     return np.degrees(angle)
 
 def process_simulation_results(simulation_results: List[Tuple[ModelingParabolaParameters, Particle_track]]):
 
@@ -258,7 +124,6 @@ def process_simulation_results(simulation_results: List[Tuple[ModelingParabolaPa
     
     print(f'Всего смоделировано {len(teta)} треков.')
     
-
     # plt.plot(TT, angle_dif, 'bo')
     plt.plot(FF, TT, 'bo')
     plt.show()
@@ -268,8 +133,12 @@ if __name__ == "__main__":
 
     EXPERIMENT_NUMBER = 0
 
-    SIMULATION = False
+    SIMULATION = True
     SIMULATION_CLAIBRATION_FILENAME = "./exp_data/model_example/calib.json"
+    SIMULATION_IMAGE_WIDTH = 1920
+    SIMULATION_IMAGE_HEIGHT = 1200
+
+    RECTIFY_IMAGES = False
     
     simulation_parameters : ModelingParabolaParameters
     simulation_results = []
@@ -295,8 +164,8 @@ if __name__ == "__main__":
         image_to_substruct2 = cv2.imread(images_for_camera2[experiment['background_image_index']])
         img_to_sub2 = cv2.cvtColor(image_to_substruct2, cv2.COLOR_BGR2GRAY)
     else:
-        img_to_sub1 = np.zeros((1200, 1920), dtype=np.uint8)
-        img_to_sub2 = np.zeros((1200, 1920), dtype=np.uint8)
+        img_to_sub1 = np.zeros((SIMULATION_IMAGE_HEIGHT, SIMULATION_IMAGE_WIDTH), dtype=np.uint8)
+        img_to_sub2 = np.zeros((SIMULATION_IMAGE_HEIGHT, SIMULATION_IMAGE_WIDTH), dtype=np.uint8)
 
     try:
         if (not SIMULATION):
@@ -334,12 +203,12 @@ if __name__ == "__main__":
     threshold= [5, 5]
     draw_graphics = True
     do_morph = False
-    search_area_range = 500
+    search_area_range = 600
 
     if (not SIMULATION):
         threshold[0] = experiment.get('initial_threshold', 5)
         threshold[1] = experiment.get('initial_threshold', 5)
-        search_area_range = experiment.get('search_area_range', 300)
+        search_area_range = experiment.get('search_area_range', 500)
 
     while True:
 
@@ -353,42 +222,17 @@ if __name__ == "__main__":
                 img1 = cv2.imread(fname1)
                 img2 = cv2.imread(fname2)
             else:
-                # # simulation_parameters.x_start_trajectory = -35 + 40 * random.random()
-                # # simulation_parameters.y_start_trajectory = 20 * random.random()
-                # simulation_parameters = ModelingParabolaParameters()
-                # print(simulation_parameters.start_angle/np.pi*180)
-                # simulation_parameters.start_angle = 72.98 / 180 * np.pi
-                # print(simulation_parameters.start_angle/np.pi*180)
-                # simulation_parameters.start_speed = -0.2905 * 10**3
-                # simulation_parameters.x_start_trajectory = -0.128159
-                # simulation_parameters.y_start_trajectory = 0
-                # simulation_parameters.plane_parameter_A = -0.2659
-                # simulation_parameters.plane_parameter_B = -0.007062
-                # simulation_parameters.plane_parameter_C = 420.48045
-                
-                # simulation_parameters.particle_diameter = 0.032
-
-                # img1, img2 = modeling.get_simulated_image(simulation_parameters, H=1200, W=1920)
-                # print(simulation_parameters.x_start_trajectory)
-
                 simulation_parameters = ModelingParabolaParameters()
-
                 
                 simulation_parameters.x_start_trajectory = -5 + 1 * random.random()
                 simulation_parameters.y_start_trajectory = 10 + 1 * random.random()
                 simulation_parameters.F = random.uniform(-10, -110)
                 simulation_parameters.theta = random.uniform(0, 0.5)
-                # simulation_parameters.x_start_trajectory = -0.128159
-                # simulation_parameters.y_start_trajectory = 0
                 simulation_parameters.start_angle = random.uniform(60 / 180 * np.pi,80 / 180 * np.pi)
-                # simulation_parameters.start_angle = 72.98 / 180 * np.pi
                 simulation_parameters.start_speed = random.uniform(-0.8 * 10**3, -0.5 * 10**3)
                 simulation_parameters.plane_parameter_C = random.uniform(300, 450)
                 simulation_parameters.plane_parameter_A = random.uniform(-1, 0)
                 simulation_parameters.plane_parameter_B = random.uniform(-1, 0)
-                # simulation_parameters.plane_parameter_A =  -0.266 
-                # simulation_parameters.plane_parameter_B = -0.0071
-                # simulation_parameters.plane_parameter_C = 420.48
                 simulation_parameters.particle_diameter = 0.032
                                 
                 img1, img2 = modeling.get_simulated_image(simulation_parameters, H=1200, W=1920)
@@ -413,29 +257,18 @@ if __name__ == "__main__":
             else:
                 gray2 = img2
           
-            # res1, res2, P1, P2 = rectifyImages(gray1, gray2, cameraMatrix1, cameraMatrix2, distCoeffs1, distCoeffs2, R, T)
-
             con_components1, con_components2 = [], []
 
             if do_processing:
                 res1 = cv2.subtract(gray1, img_to_sub1)
-                # res1 = res1[:1040,150:]
-
-                #mask1 = np.ones((res1.shape[0], res1.shape[1]), dtype=np.uint8)
-                #mask1[:mask1.shape[0], :600] = 0
-                #res1 = cv2.bitwise_and(res1, res1, mask=mask1)
 
                 res2 = cv2.subtract(gray2, img_to_sub2)
-                # res2 = res2[:1040,150:]
-
-                #mask2 = np.ones((res2.shape[0], res2.shape[1]), dtype=np.uint8)
-                #mask2[:mask2.shape[0], :300] = 0
-                #res2 = cv2.bitwise_and(res2, res2, mask=mask2)
                 
-                # res1, res2, P1, P2 = rectifyImages(res1, res2, cameraMatrix1, cameraMatrix2, distCoeffs1, distCoeffs2, R, T)
-                
-                P1 = cameraMatrix1 @ np.hstack((np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]), np.array([[0, 0, 0]]).T))
-                P2 = cameraMatrix1 @ np.hstack((R, np.array([T]).T))
+                if RECTIFY_IMAGES:
+                    res1, res2, P1, P2 = rectifyImages(res1, res2, cameraMatrix1, cameraMatrix2, distCoeffs1, distCoeffs2, R, T)
+                else:
+                    P1 = cameraMatrix1 @ np.hstack((np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]), np.array([[0, 0, 0]]).T))
+                    P2 = cameraMatrix1 @ np.hstack((R, np.array([T]).T))
 
                 retval1, dst1 = cv2.threshold(res1, threshold[0], 255, cv2.THRESH_BINARY)
                 retval2, dst2 = cv2.threshold(res2, threshold[1], 255, cv2.THRESH_BINARY)
@@ -463,15 +296,8 @@ if __name__ == "__main__":
         color1 = cv2.cvtColor(dst1, cv2.COLOR_GRAY2BGR)
         color2 = cv2.cvtColor(dst2, cv2.COLOR_GRAY2BGR)
 
-
-        #grid_points1 = np.array([[1460, 1140]], dtype=np.float)
-        #grid_points2 = np.array([[1220, 1173]], dtype=np.float)
-
         projmtx1 = np.dot(cameraMatrix1, np.hstack((np.identity(3), np.zeros((3,1)))))
         projmtx2 = np.dot(cameraMatrix2, np.hstack((R, T[np.newaxis, :].T)))
-
-        #points_4d = cv2.triangulatePoints(projmtx1, projmtx2, grid_points1.T, grid_points2.T)
-        #points_3d = cv2.convertPointsFromHomogeneous(points_4d.T)
 
         if draw_graphics:
             for component in con_components1:
@@ -583,8 +409,8 @@ if __name__ == "__main__":
                 else:
                     print(f'Не удалось найти стереопару параболы')
                                            
-            except:
-                pass
+            except Exception as ex:
+                print(f'Ошибка добавления пары парабол: {ex}')
         
         
         if key==27:    # Esc key to stop
@@ -663,6 +489,3 @@ if __name__ == "__main__":
                 print(f'Загружено {len(tracks)} треков, последний обработанный файл {tracks[-1].image_name}')
         else:
             print(key) # else print its value
-
-
-
