@@ -1,8 +1,5 @@
 import cv2
-import random
-
 import numpy as np
-import matplotlib.pyplot as plt
 
 from modeling_parameters import ModelingParabolaParameters
 
@@ -161,22 +158,27 @@ def project_trajectory_3d(cam1, cam2, trajectory_3d):
     
     return projected_points_cam1[:,0,:2], projected_points_cam2[:,0,:2]
 
-def calculate_rotated_rotation_matrix(theta):
+def calculate_rotated_rotation_matrix(x: float, y: float, z: float) -> np.ndarray:
+    '''
+    Рассчитывает матрицу поворота по трем углам Эйлера в градусах
+    '''
     # 旋转角度（弧度）
-    angle_rad = np.radians(theta)
-    print(theta/np.pi*180 )
+    angle_rad = np.radians(x)
 
-    original_rotation_matrix = np.array([[1., 0., 0.],
-                                         [0., 1., 0.],
-                                         [0., 0., 1.]])
-    u_x, u_y, u_z = 1., 0., 0.
-    # 计算旋转矩阵
-    rotation_matrix = np.array([[np.cos(angle_rad) + u_x**2 * (1 - np.cos(angle_rad)), u_x * u_y * (1 - np.cos(angle_rad)) - u_z * np.sin(angle_rad), u_x * u_z * (1 - np.cos(angle_rad)) + u_y * np.sin(angle_rad)],
-                                [u_y * u_x * (1 - np.cos(angle_rad)) + u_z * np.sin(angle_rad), np.cos(angle_rad) + u_y**2 * (1 - np.cos(angle_rad)), u_y * u_z * (1 - np.cos(angle_rad)) - u_x * np.sin(angle_rad)],
-                                [u_z * u_x * (1 - np.cos(angle_rad)) - u_y * np.sin(angle_rad), u_z * u_y * (1 - np.cos(angle_rad)) + u_x * np.sin(angle_rad), np.cos(angle_rad) + u_z**2 * (1 - np.cos(angle_rad))]])
+    rot_x = np.array([[1, 0, 0],
+                      [0, np.cos(angle_rad), -np.sin(angle_rad)],
+                      [0, np.sin(angle_rad), np.cos(angle_rad)]])
+    
+    rot_y = np.array([[1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1]])
+
+    rot_z = np.array([[1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1]])
 
     # 计算旋转后的相机旋转矩阵
-    rotated_rotation_matrix = np.dot(rotation_matrix, original_rotation_matrix)
+    rotated_rotation_matrix = np.dot(np.dot(rot_x, rot_y), rot_z)
 
     return rotated_rotation_matrix
 
@@ -222,39 +224,13 @@ def get_simulated_image(parameters: ModelingParabolaParameters, H, W):
     'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
     'dist': np.array([0, 0, 0, 0], dtype=float)
     }
-    F = random.uniform(-10, -110)
-    theta = random.uniform(0, 0.5)
-    # cam2 = {
-    # 'R': np.array([[0.9956599184270521, -0.0019591982361651166, 0.09304562526044553],
-    #                [0.0020270800581164237, 0.9999977438269337, -0.0006350491951564792],
-    #                [-0.09304417114614887, 0.0008209039613070899, 0.9956616434976354]]),
-    # # 'T': np.array([-100.24696716028096, 0, 0]),
-    # # 'T': np.array([F, 0, 0]),
-    # # 'R': np.array([[1., 0., 0.],
-    # #                [0, 1., 0.],
-    # #                [0., 0., 1.]]),
-    
-    # 'T': np.array([-43.24696716028096, 0, 0]),
-    # 'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
-    # 'dist': np.array([0, 0, 0, 0], dtype=float)
-    # }
     cam2 = {
-    # 'R': np.array([[ 1,          0,          0,        ],
-    #                 [ 0,          0.99999848, -0.00174533],
-    #                 [ 0,          0.00174533,  0.99999848 ]]),
-    'R': calculate_rotated_rotation_matrix(theta),
-    'T': np.array([-43.24696716028096, -0.12027285856129845, -3.6467541290391603]),
-    # 'T': np.array([-100.24696716028096, 0, 0]),
-    # 'T': np.array([F, 0, 0]),
-    # 'R': np.array([[1., 0., 0.],
-    #                [0, 1., 0.],
-    #                [0., 0., 1.]]),
-    
-    # 'T': np.array([-43.24696716028096, 0, 0]),
+    'R': calculate_rotated_rotation_matrix(parameters.cams_rot_x, parameters.cams_rot_y, parameters.cams_rot_z),
+    'T': np.array([parameters.cams_trans_vec_x, parameters.cams_trans_vec_y, parameters.cams_trans_vec_z]),
     'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
     'dist': np.array([0, 0, 0, 0], dtype=float)
     }
-# project the 3D points onto the image planes of cam1 and cam2
+    # project the 3D points onto the image planes of cam1 and cam2
     projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
 
     not_valid_points = len(projected_points_cam1[projected_points_cam1[:,0] < 0]) + \
@@ -279,97 +255,3 @@ def get_simulated_image(parameters: ModelingParabolaParameters, H, W):
     img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
     
     return img1_1, img2_1
-
-
-
-
-# if __name__ == "__main__":
- 
-#     # Размер изображения частицы в [мм]
-# #     d = 0.07 # mm
-    
-# #     # Координаты начального положения частицы [мм]
-# #     x0 = -15
-# #     y0 = 10
-# #     # Начальная скорость [мм/с]
-# #     v0 = -0.6 * 10**3
-# #     # Угол взлета
-# #     alpha = 75 / 180 * np.pi
-# #     # Параметры плоскости в которой происходит левитация
-# #     A = 0
-# #     B = 0
-# #     C = 1
-# #     D = 500 
-# #     # Шаг по времени для расчета координат траектории частицы [с]
-# #     dt = 0.00001
-# #     trajectory = calculate_trajectory(x0, y0, v0, alpha, A, B, C, D, dt = dt, max_time=0.1)
-
-# #     trajectory_2d_x = trajectory[:, 0]
-# #     trajectory_2d_y = trajectory[:, 1]
-# #     trajectory_3d_z = trajectory[:, 2]
-
-# #     # Plot trajectory
-# #     # fig = plt.figure()
-# #     # ax = fig.add_subplot(111, projection='3d')
-# #     # ax.plot(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)
-# #     # ax.set_xlabel('X')
-# #     # ax.set_ylabel('Y')
-# #     # ax.set_zlabel('Z')
-# #     # ax.view_init(-60, -90)
-# #     # plt.show()
-
-# # # assume we have the 3D trajectory stored in variable "trajectory_3d"
-# #     trajectory_3d = np.array(list(zip(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)))
-# #     cam1 = {
-# #     'R': np.array([[1., 0., 0.],
-# #                    [0, 1., 0.],
-# #                    [0., 0., 1.]]),
-# #     'T': np.array([0., 0., 0.]),
-# #     'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
-# #     'dist': np.array([0, 0, 0, 0], dtype=float)
-# #     }
-# #     cam2 = {
-# #     'R': np.array([[0.9956599184270521, -0.0019591982361651166, 0.09304562526044553],
-# #                    [0.0020270800581164237, 0.9999977438269337, -0.0006350491951564792],
-# #                    [-0.09304417114614887, 0.0008209039613070899, 0.9956616434976354]]),
-# #     'T': np.array([-43.24696716028096, -0.12027285856129845, -3.6467541290391603]),
-# #     'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
-# #     'dist': np.array([0, 0, 0, 0], dtype=float)
-# #     }
-# # # project the 3D points onto the image planes of cam1 and cam2
-# #     projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
-
-# #     IMAGE_WIDTH = 1920
-# #     IMAGE_HEIGHT = 1280
-
-# #     # TODO: Смоделировать дискретизацию с учетом размера частицы в пикселях
-# #     modeled_image1 = np.zeros((IMAGE_HEIGHT, IMAGE_WIDTH), dtype=float)
-# #     modeled_image2 = np.zeros((IMAGE_HEIGHT, IMAGE_WIDTH), dtype=float)
-
-# #     x0_list = []
-# #     y0_list = []
-# #     x2_list = []
-# #     y2_list = []
-
-# #     # Размер пикселя матрицы
-#     delta_x = 5*10**-3 # mm
-#     delta_y = 5*10**-3 # mm
-
-# #     brightness1 = add_intensity_subpixel(modeled_image1, d, projected_points_cam1[:,0], projected_points_cam1[:,1], delta_x, delta_y)
-
-# #     brightness2 = add_intensity_subpixel(modeled_image2, d, projected_points_cam2[:,0], projected_points_cam2[:,1], delta_x, delta_y)
-
-#     # fig, axes = plt.subplots(nrows=1, ncols=2)
-#     # axes[0].imshow(brightness1)    
-#     # axes[0].set_title('Brightness 1')
-#     # axes[1].imshow(brightness2)
-#     # axes[1].set_title('Brightness 2')
-#     # plt.show()
-#     brightness = get_simulated_image(d = 0.07, x0 = -15, y0 = 10, v0 = -0.6 * 10**3, alpha = 75 / 180 * np.pi, A = 0, B = 0, 
-#                         C = 1, D = 500, dt = 0.00001, H = 1280, W = 1920)
-#     brightness = brightness / np.max(brightness) * 30
-#     # brightness1 = brightness1 / np.max(brightness1) * 30
-#     # brightness2 = brightness2 / np.max(brightness2) * 30
-   
-#     cv2.imwrite('1.png', brightness)
-    # cv2.imwrite('2.png', brightness2)
