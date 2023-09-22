@@ -15,6 +15,9 @@ from excel_report import save_tracks_to_excel
 from particle_track import Particle_track
 from connected_component import Connected_component
 from modeling_parameters import ModelingParabolaParameters
+
+
+RECTIFY_IMAGES = False
         
 
 def rectifyImages(img1, img2, cameraMatrix1, cameraMatrix2, distCoeffs1, distCoeffs2, R, T):
@@ -98,53 +101,11 @@ def get_angle_between_plane_and_camera(A, B, C):
     return np.degrees(angle)
 
 
-def process_simulation_results(simulation_results: List[Tuple[ModelingParabolaParameters, Particle_track]]):
-
-    angle_dif = []
-    velocity_dif = []
-    teta = []
-    z = []
-    AA = []
-    BB = []
-    CC = []
-    FF = []
-    TT = []
-    for params, particle in simulation_results:
-        angle_dif.append(params.start_angle / np.pi * 180 - particle.Alpha)
-        velocity_dif.append(params.start_speed - particle.V0)
-        # teta.append(get_angle_between_plane_and_camera(params.plane_parameter_A, params.plane_parameter_B, params.plane_parameter_C))
-        teta_value = get_angle_between_plane_and_camera(params.plane_parameter_A, params.plane_parameter_B, params.plane_parameter_C)
-        teta.append(teta_value)
-        AA.append(params.plane_parameter_C)
-        BB.append(params.start_angle/ np.pi * 180)
-        CC.append(particle.Alpha)
-        z.append(params.plane_parameter_A)
-        FF.append(params.F)  # 记录F的值
-        TT.append(params.theta)
+def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=None) -> List[Particle_track]:
     
-    print(f'Всего смоделировано {len(teta)} треков.')
-    
-    # plt.plot(TT, angle_dif, 'bo')
-    plt.plot(FF, TT, 'bo')
-    plt.show()
-    
+    simulation = modeling_parameters is not None
 
-if __name__ == "__main__":
-
-    EXPERIMENT_NUMBER = 0
-
-    SIMULATION = True
-    SIMULATION_CLAIBRATION_FILENAME = "./exp_data/model_example/calib.json"
-    SIMULATION_IMAGE_WIDTH = 1920
-    SIMULATION_IMAGE_HEIGHT = 1200
-
-    RECTIFY_IMAGES = False
-    
-    simulation_parameters : ModelingParabolaParameters
-    simulation_results = []
-
-
-    if (not SIMULATION):
+    if (not simulation):
         with open('experiments.json', 'r', encoding='utf8') as f:
             experiments = json.load(f)
 
@@ -164,23 +125,23 @@ if __name__ == "__main__":
         image_to_substruct2 = cv2.imread(images_for_camera2[experiment['background_image_index']])
         img_to_sub2 = cv2.cvtColor(image_to_substruct2, cv2.COLOR_BGR2GRAY)
     else:
-        img_to_sub1 = np.zeros((SIMULATION_IMAGE_HEIGHT, SIMULATION_IMAGE_WIDTH), dtype=np.uint8)
-        img_to_sub2 = np.zeros((SIMULATION_IMAGE_HEIGHT, SIMULATION_IMAGE_WIDTH), dtype=np.uint8)
+        image_width = modeling_parameters[0].image_width
+        image_height = modeling_parameters[0].image_height
+        img_to_sub1 = np.zeros((image_height, image_width), dtype=np.uint8)
+        img_to_sub2 = np.zeros((image_height, image_width), dtype=np.uint8)
 
     try:
-        if (not SIMULATION):
+        if (not simulation):
             path_to_calibration_file = experiment['path_to_calibration_data']
-        else:
-            path_to_calibration_file = SIMULATION_CLAIBRATION_FILENAME
-
-        with open(path_to_calibration_file, 'r') as fp:
-            calibration_data = json.load(fp)
-            cameraMatrix1 = np.array(calibration_data['Camera1']['CameraMatrix'])
-            distCoeffs1 = np.array(calibration_data['Camera1']['DistorsionCoefficients'])
-            cameraMatrix2 = np.array(calibration_data['Camera2']['CameraMatrix'])
-            distCoeffs2 = np.array(calibration_data['Camera2']['DistorsionCoefficients'])
-            R = np.array(calibration_data['R'])
-            T = np.array(calibration_data['T'])
+            
+            with open(path_to_calibration_file, 'r') as fp:
+                calibration_data = json.load(fp)
+                cameraMatrix1 = np.array(calibration_data['Camera1']['CameraMatrix'])
+                distCoeffs1 = np.array(calibration_data['Camera1']['DistorsionCoefficients'])
+                cameraMatrix2 = np.array(calibration_data['Camera2']['CameraMatrix'])
+                distCoeffs2 = np.array(calibration_data['Camera2']['DistorsionCoefficients'])
+                R = np.array(calibration_data['R'])
+                T = np.array(calibration_data['T'])
             print('Calibration data is load from calibration_data.json') 
     except:
         print(f'Calibration data is not founded by path "{path_to_calibration_file}"') 
@@ -205,48 +166,41 @@ if __name__ == "__main__":
     do_morph = False
     search_area_range = 600
 
-    if (not SIMULATION):
+    if (not simulation):
         threshold[0] = experiment.get('initial_threshold', 5)
         threshold[1] = experiment.get('initial_threshold', 5)
         search_area_range = experiment.get('search_area_range', 500)
 
-    while True:
+    meas_count = 0
 
-        if position_changed or SIMULATION:
+    while True:
+        if simulation:
+            if meas_count >= len(modeling_parameters):
+                return tracks
+            modeling_parameter = modeling_parameters[meas_count]
+
+            cameraMatrix1 = modeling_parameter.cam1_K
+            distCoeffs1 = modeling_parameter.cam1_dist
+            cameraMatrix2 = modeling_parameter.cam2_K
+            distCoeffs2 = modeling_parameter.cam2_dist
+            R = modeling_parameter.cam2_R
+            T = modeling_parameter.cam2_T            
+
+        if position_changed or simulation:
             
-            if (not SIMULATION):
+            if (not simulation):
                 if current_position == len(images_for_camera1) - 1:
                     current_position = 0
                 fname1, fname2 = images_for_camera1[current_position], images_for_camera2[current_position]
 
                 img1 = cv2.imread(fname1)
                 img2 = cv2.imread(fname2)
-            else:
-                simulation_parameters = ModelingParabolaParameters()
-                
-                simulation_parameters.x_start_trajectory = -5 + 1 * random.random()
-                simulation_parameters.y_start_trajectory = 10 + 1 * random.random()
-                simulation_parameters.F = random.uniform(-10, -110)
-                simulation_parameters.theta = random.uniform(0, 0.5)
-                simulation_parameters.start_angle = random.uniform(60 / 180 * np.pi,80 / 180 * np.pi)
-                simulation_parameters.start_speed = random.uniform(-0.8 * 10**3, -0.5 * 10**3)
-                simulation_parameters.plane_parameter_C = random.uniform(300, 450)
-                simulation_parameters.plane_parameter_A = random.uniform(-1, 0)
-                simulation_parameters.plane_parameter_B = random.uniform(-1, 0)
-                simulation_parameters.particle_diameter = 0.032
-                                
-                img1, img2 = modeling.get_simulated_image(simulation_parameters, H=1200, W=1920)
+            else:                                                
+                img1, img2 = modeling.get_simulated_image(modeling_parameter)
 
                 if img1 is None:
                     print('Парабола вышла за границы изображения')
                     continue
-
-                print("Start Angle:", simulation_parameters.start_angle / np.pi * 180)
-                print("Start Speed:", simulation_parameters.start_speed)
-                print("X Start Trajectory:", simulation_parameters.x_start_trajectory)
-                print("Y Start Trajectory:", simulation_parameters.y_start_trajectory)
-                print("plane_parameter_A:", simulation_parameters.plane_parameter_A)
-
         
             if len(img1.shape) > 2:
                 gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
@@ -268,7 +222,7 @@ if __name__ == "__main__":
                     res1, res2, P1, P2 = rectifyImages(res1, res2, cameraMatrix1, cameraMatrix2, distCoeffs1, distCoeffs2, R, T)
                 else:
                     P1 = cameraMatrix1 @ np.hstack((np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]), np.array([[0, 0, 0]]).T))
-                    P2 = cameraMatrix1 @ np.hstack((R, np.array([T]).T))
+                    P2 = cameraMatrix2 @ np.hstack((R, np.array([T]).T))
 
                 retval1, dst1 = cv2.threshold(res1, threshold[0], 255, cv2.THRESH_BINARY)
                 retval2, dst2 = cv2.threshold(res2, threshold[1], 255, cv2.THRESH_BINARY)
@@ -374,7 +328,7 @@ if __name__ == "__main__":
                     empty_img = np.zeros((100, 100), dtype=np.uint8)
                     cv2.imshow('img3', empty_img)
         
-        if (not SIMULATION):
+        if (not simulation):
             filename1 = fname1.split("\\")[-1]
             cv2.putText(color1, f'file={filename1}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)
             
@@ -384,14 +338,14 @@ if __name__ == "__main__":
         cv2.imshow('img1', color1)
         cv2.imshow('img2', color2)
 
-        if (SIMULATION):
+        if (simulation):
             waitTime = 500
         else:
             waitTime = 0
 
         key = cv2.waitKey(waitTime)
 
-        if (SIMULATION):
+        if (simulation):
             try:
                 if matched_component is not None:
                     particle = Particle_track(matched_component, cur_component, P1, P2)
@@ -403,16 +357,15 @@ if __name__ == "__main__":
 
                     tracks.append(particle)
                     print(f'Сохранено {len(tracks)} треков')
-
-                    simulation_results.append((simulation_parameters, particle))
-
                 else:
+                    tracks.append(None)
                     print(f'Не удалось найти стереопару параболы')
                                            
             except Exception as ex:
                 print(f'Ошибка добавления пары парабол: {ex}')
         
-        
+        meas_count = meas_count + 1
+
         if key==27:    # Esc key to stop
             break
         elif key==-1:  # normally -1 returned,so don't print it
@@ -473,8 +426,6 @@ if __name__ == "__main__":
             drawRectifiedImages(color1, color2)
         elif key == 116: # t
             make_report(tracks)
-        elif key == 117: # u
-            process_simulation_results(simulation_results)
         elif key == 118: # v
             save_tracks_to_excel(experiment, tracks)
         elif key == 96: # `
@@ -489,3 +440,10 @@ if __name__ == "__main__":
                 print(f'Загружено {len(tracks)} треков, последний обработанный файл {tracks[-1].image_name}')
         else:
             print(key) # else print its value
+    
+
+if __name__ == "__main__":
+
+    EXPERIMENT_NUMBER = 0
+
+    main_processing_loop()

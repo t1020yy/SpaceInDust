@@ -158,32 +158,8 @@ def project_trajectory_3d(cam1, cam2, trajectory_3d):
     
     return projected_points_cam1[:,0,:2], projected_points_cam2[:,0,:2]
 
-def calculate_rotated_rotation_matrix(x: float, y: float, z: float) -> np.ndarray:
-    '''
-    Рассчитывает матрицу поворота по трем углам Эйлера в градусах
-    '''
-    # 旋转角度（弧度）
-    angle_rad = np.radians(x)
 
-    rot_x = np.array([[1, 0, 0],
-                      [0, np.cos(angle_rad), -np.sin(angle_rad)],
-                      [0, np.sin(angle_rad), np.cos(angle_rad)]])
-    
-    rot_y = np.array([[1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1]])
-
-    rot_z = np.array([[1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1]])
-
-    # 计算旋转后的相机旋转矩阵
-    rotated_rotation_matrix = np.dot(np.dot(rot_x, rot_y), rot_z)
-
-    return rotated_rotation_matrix
-
-
-def get_simulated_image(parameters: ModelingParabolaParameters, H, W):
+def get_simulated_image(parameters: ModelingParabolaParameters):
     d = parameters.particle_diameter
     
     # Координаты начального положения частицы [мм]
@@ -217,21 +193,22 @@ def get_simulated_image(parameters: ModelingParabolaParameters, H, W):
 # assume we have the 3D trajectory stored in variable "trajectory_3d"
     trajectory_3d = np.array(list(zip(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)))
     cam1 = {
-    'R': np.array([[1., 0., 0.],
-                   [0, 1., 0.],
-                   [0., 0., 1.]]),
-    'T': np.array([0., 0., 0.]),
-    'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
-    'dist': np.array([0, 0, 0, 0], dtype=float)
+    'R': parameters.cam1_R,
+    'T': parameters.cam1_T,
+    'K': parameters.cam1_K,
+    'dist': parameters.cam1_dist
     }
     cam2 = {
-    'R': calculate_rotated_rotation_matrix(parameters.cams_rot_x, parameters.cams_rot_y, parameters.cams_rot_z),
-    'T': np.array([parameters.cams_trans_vec_x, parameters.cams_trans_vec_y, parameters.cams_trans_vec_z]),
-    'K': np.array([[12900, 0, 960], [0, 12900, 600], [0, 0, 1]], dtype=float),
-    'dist': np.array([0, 0, 0, 0], dtype=float)
+    'R': parameters.cam2_R,
+    'T': parameters.cam2_T,
+    'K': parameters.cam2_K,
+    'dist': parameters.cam2_dist
     }
     # project the 3D points onto the image planes of cam1 and cam2
     projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
+
+    H = parameters.image_height
+    W = parameters.image_width
 
     not_valid_points = len(projected_points_cam1[projected_points_cam1[:,0] < 0]) + \
                        len(projected_points_cam1[projected_points_cam1[:,0] > W]) + \
@@ -243,7 +220,8 @@ def get_simulated_image(parameters: ModelingParabolaParameters, H, W):
                        len(projected_points_cam2[projected_points_cam1[:,1] > H])
     
     if not_valid_points > 0:
-        return None, None
+        #return None, None
+        pass 
    
     img1 = np.zeros((H, W), dtype=float)
     img2 = np.zeros((H, W), dtype=float)
