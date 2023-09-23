@@ -60,19 +60,21 @@ def calculate_rotated_rotation_matrix(x: float, y: float, z: float) -> np.ndarra
     Рассчитывает матрицу поворота по трем углам Эйлера в градусах
     '''
     # 旋转角度（弧度）
-    angle_rad = np.radians(x)
+    angle_rad_x = np.radians(x)
+    angle_rad_y = np.radians(y)
+    angle_rad_z = np.radians(z)
 
     rot_x = np.array([[1, 0, 0],
-                      [0, np.cos(angle_rad), -np.sin(angle_rad)],
-                      [0, np.sin(angle_rad), np.cos(angle_rad)]])
+                      [0, np.cos(angle_rad_x), -np.sin(angle_rad_x)],
+                      [0, np.sin(angle_rad_x), np.cos(angle_rad_x)]])
     
-    rot_y = np.array([[1, 0, 0],
+    rot_y = np.array([[np.cos(angle_rad_y), 0, np.sin(angle_rad_y)],
                       [0, 1, 0],
-                      [0, 0, 1]])
-
-    rot_z = np.array([[1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1]])
+                      [-np.sin(angle_rad_y), 0, np.cos(angle_rad_y)]])
+    
+    rot_z = np.array([[np.cos(angle_rad_z), -np.sin(angle_rad_z), 0],
+                      [np.sin(angle_rad_z), np.cos(angle_rad_z), 0],
+                      [0, 0, 1]]) 
 
     # 计算旋转后的相机旋转矩阵
     rotated_rotation_matrix = np.dot(np.dot(rot_x, rot_y), rot_z)
