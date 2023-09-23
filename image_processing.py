@@ -81,24 +81,24 @@ def draw_tracks(tracks):
         plt.show()
 
 
-def get_angle_between_plane_and_camera(A, B, C):
-    # 计算粒子运动平面的法向量 n1
+# def get_angle_between_plane_and_camera(A, B, C):
+#     # 计算粒子运动平面的法向量 n1
 
-    n1 = np.array([A, B, 1], dtype=float)
-    n1 /= np.linalg.norm(n1)
+#     n1 = np.array([A, B, 1], dtype=float)
+#     n1 /= np.linalg.norm(n1)
 
-    # 提取相机的旋转矩阵 R 的第三列作为相机观察面的法向量 n2
-    cam1 = {
-        'R': np.array([[1., 0., 0.],
-                       [0, 1., 0.],
-                       [0., 0., 1.]])
-    }
-    n2 = cam1['R'][:, 2]
+#     # 提取相机的旋转矩阵 R 的第三列作为相机观察面的法向量 n2
+#     cam1 = {
+#         'R': np.array([[1., 0., 0.],
+#                        [0, 1., 0.],
+#                        [0., 0., 1.]])
+#     }
+#     n2 = cam1['R'][:, 2]
 
-    # 计算夹角
-    angle = np.arccos(np.dot(n1, n2))
+#     # 计算夹角
+#     angle = np.arccos(np.dot(n1, n2))
 
-    return np.degrees(angle)
+#     return np.degrees(angle)
 
 
 def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=None) -> List[Particle_track]:
@@ -250,6 +250,16 @@ def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=N
         color1 = cv2.cvtColor(dst1, cv2.COLOR_GRAY2BGR)
         color2 = cv2.cvtColor(dst2, cv2.COLOR_GRAY2BGR)
 
+        output_folder1 = "D:/image simulation/camer1"
+        output_folder2 = "D:/image simulation/camer2"
+        os.makedirs(output_folder1, exist_ok=True)
+        os.makedirs(output_folder2, exist_ok=True)
+        output_filename1 = os.path.join(output_folder1, 'img45.tif')
+        cv2.imwrite(output_filename1, color1)
+        output_filename2 = os.path.join(output_folder2, 'img45.tif')
+        cv2.imwrite(output_filename2, color2)
+
+
         projmtx1 = np.dot(cameraMatrix1, np.hstack((np.identity(3), np.zeros((3,1)))))
         projmtx2 = np.dot(cameraMatrix2, np.hstack((R, T[np.newaxis, :].T)))
 
@@ -334,6 +344,8 @@ def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=N
             
             filename2 = fname2.split("\\")[-1]
             cv2.putText(color2, f'file={filename2}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)            
+
+        
 
         cv2.imshow('img1', color1)
         cv2.imshow('img2', color2)
