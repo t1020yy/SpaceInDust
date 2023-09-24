@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 import cv2
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 
@@ -15,6 +16,8 @@ from excel_report import save_tracks_to_excel
 from particle_track import Particle_track
 from connected_component import Connected_component
 from modeling_parameters import ModelingParabolaParameters
+
+
 
 
 RECTIFY_IMAGES = False
@@ -81,24 +84,44 @@ def draw_tracks(tracks):
         plt.show()
 
 
-# def get_angle_between_plane_and_camera(A, B, C):
-#     # 计算粒子运动平面的法向量 n1
+def keep_curve_inside_green_box(color2, left, top, right, bottom):
+    # 将图像转换为灰度图像
+    gray = cv2.cvtColor(color2, cv2.COLOR_BGR2GRAY)
 
-#     n1 = np.array([A, B, 1], dtype=float)
-#     n1 /= np.linalg.norm(n1)
+    # 使用阈值将图像二值化
+    _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
 
-#     # 提取相机的旋转矩阵 R 的第三列作为相机观察面的法向量 n2
-#     cam1 = {
-#         'R': np.array([[1., 0., 0.],
-#                        [0, 1., 0.],
-#                        [0., 0., 1.]])
-#     }
-#     n2 = cam1['R'][:, 2]
+    # 找到轮廓
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-#     # 计算夹角
-#     angle = np.arccos(np.dot(n1, n2))
+    # 创建一个空白图像，与输入图像相同大小
+    result = np.copy(color2)
 
-#     return np.degrees(angle)
+    # 创建一个空白掩码图像，与输入图像相同大小
+    mask = np.zeros_like(gray)
+
+    # 边界检测标志
+    border_detected = False
+
+    # 循环遍历所有轮廓
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+
+        # 检查轮廓的边界是否在绿色框内
+        if x >= left and y >= top and x + w <= right and y + h <= bottom:
+            # 如果在绿色框内，将轮廓绘制到结果图像和掩码中
+            cv2.drawContours(result, [contour], -1, (0, 255, 0), thickness=3)
+            cv2.drawContours(mask, [contour], -1, 255, thickness=cv2.FILLED)
+        else:
+            # 如果轮廓位于边界上，将border_detected标志设置为True
+            border_detected = True
+
+    # 如果在边界上检测到曲线，只保留绿色框线框出的部分
+    if border_detected:
+        result = cv2.bitwise_and(result, result, mask=mask)
+
+    return result
+
 
 
 def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=None) -> List[Particle_track]:
@@ -172,6 +195,7 @@ def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=N
         search_area_range = experiment.get('search_area_range', 500)
 
     meas_count = 0
+    counter = 0
 
     while True:
         if simulation:
@@ -250,14 +274,18 @@ def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=N
         color1 = cv2.cvtColor(dst1, cv2.COLOR_GRAY2BGR)
         color2 = cv2.cvtColor(dst2, cv2.COLOR_GRAY2BGR)
 
-        output_folder1 = "D:/image simulation/camer1"
-        output_folder2 = "D:/image simulation/camer2"
-        os.makedirs(output_folder1, exist_ok=True)
-        os.makedirs(output_folder2, exist_ok=True)
-        output_filename1 = os.path.join(output_folder1, 'img45.tif')
+        # 保存 color1 到指定位置
+        output_folder_color1 = "D:/output_images/color1"
+        os.makedirs(output_folder_color1, exist_ok=True)
+        output_filename1 = os.path.join(output_folder_color1, f'img_{counter}.tif')
         cv2.imwrite(output_filename1, color1)
-        output_filename2 = os.path.join(output_folder2, 'img45.tif')
+        
+        # 保存 color2 到指定位置
+        output_folder_color2 = "D:/output_images/color2"
+        os.makedirs(output_folder_color2, exist_ok=True)
+        output_filename2 = os.path.join(output_folder_color2, f'img_{counter}.tif')
         cv2.imwrite(output_filename2, color2)
+        counter += 1
 
 
         projmtx1 = np.dot(cameraMatrix1, np.hstack((np.identity(3), np.zeros((3,1)))))
@@ -343,12 +371,24 @@ def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=N
             cv2.putText(color1, f'file={filename1}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)
             
             filename2 = fname2.split("\\")[-1]
-            cv2.putText(color2, f'file={filename2}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)            
-
+            cv2.putText(color2, f'file={filename2}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)  
         
+        
+        result_image = keep_curve_inside_green_box(color2, search_area_left, search_area_top, search_area_right, search_area_bottom)
+
 
         cv2.imshow('img1', color1)
         cv2.imshow('img2', color2)
+
+       # 显示结果图像
+        cv2.namedWindow('Result', cv2.WINDOW_NORMAL)  # 使用 cv2.WINDOW_NORMAL 来允许手动调整窗口大小
+        cv2.resizeWindow('Result', 700, 600)
+        cv2.imshow("Result", result_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()      
+
+        
+        
 
         if (simulation):
             waitTime = 500
