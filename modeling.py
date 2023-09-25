@@ -14,8 +14,8 @@ def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     A, B, C - параметры плоскости, в которой перемещается частица
     g - ускорение свободного падения
     '''
-    vx0 = -v0 * np.cos(alpha)
-    vy0 = v0 * np.sin(alpha)
+    vx0 = v0 * np.cos(np.radians(alpha))
+    vy0 = -v0 * np.sin(np.radians(alpha))
     x = x0 + vx0 * t
     y = y0 + vy0 * t + 0.5 * g * t ** 2
     z = (A * x + B * y + C)

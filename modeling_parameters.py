@@ -6,8 +6,8 @@ class ModelingParabolaParameters:
         self.particle_diameter = 0.05 #mm
         self.x_start_trajectory = -10 #mm
         self.y_start_trajectory = 10 #mm
-        self.start_speed = -0.6 * 10**3
-        self.start_angle = 70 / 180 * np.pi
+        self.start_speed = 0.6 * 10**3
+        self.start_angle = 70
         self.plane_parameter_A = 0 
         self.plane_parameter_B = 0
         self.plane_parameter_C = 420
@@ -20,7 +20,7 @@ class ModelingParabolaParameters:
         self.y_integration_step = 5*10**-3
 
         # Вектор переноса второй камеры в мм
-        self.cams_trans_vec_x = -43.0
+        self.cams_trans_vec_x = 5.0
         self.cams_trans_vec_y = 0.0
         self.cams_trans_vec_z = 0.0
 
