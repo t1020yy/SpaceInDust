@@ -18,8 +18,6 @@ from connected_component import Connected_component
 from modeling_parameters import ModelingParabolaParameters
 
 
-
-
 RECTIFY_IMAGES = False
         
 
@@ -82,46 +80,6 @@ def draw_tracks(tracks):
         ax.view_init(-70, -90)
             
         plt.show()
-
-
-def keep_curve_inside_green_box(color2, left, top, right, bottom):
-    # 将图像转换为灰度图像
-    gray = cv2.cvtColor(color2, cv2.COLOR_BGR2GRAY)
-
-    # 使用阈值将图像二值化
-    _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
-
-    # 找到轮廓
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # 创建一个空白图像，与输入图像相同大小
-    result = np.copy(color2)
-
-    # 创建一个空白掩码图像，与输入图像相同大小
-    mask = np.zeros_like(gray)
-
-    # 边界检测标志
-    border_detected = False
-
-    # 循环遍历所有轮廓
-    for contour in contours:
-        x, y, w, h = cv2.boundingRect(contour)
-
-        # 检查轮廓的边界是否在绿色框内
-        if x >= left and y >= top and x + w <= right and y + h <= bottom:
-            # 如果在绿色框内，将轮廓绘制到结果图像和掩码中
-            cv2.drawContours(result, [contour], -1, (0, 255, 0), thickness=3)
-            cv2.drawContours(mask, [contour], -1, 255, thickness=cv2.FILLED)
-        else:
-            # 如果轮廓位于边界上，将border_detected标志设置为True
-            border_detected = True
-
-    # 如果在边界上检测到曲线，只保留绿色框线框出的部分
-    if border_detected:
-        result = cv2.bitwise_and(result, result, mask=mask)
-
-    return result
-
 
 
 def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=None) -> List[Particle_track]:
@@ -222,8 +180,10 @@ def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=N
             else:                                                
                 img1, img2 = modeling.get_simulated_image(modeling_parameter)
 
-                if img1 is None:
+                if img1 is None or img2 is None:
                     print('Парабола вышла за границы изображения')
+                    tracks.append(None)
+                    meas_count = meas_count + 1
                     continue
         
             if len(img1.shape) > 2:
@@ -373,22 +333,8 @@ def main_processing_loop(modeling_parameters: List[ModelingParabolaParameters]=N
             filename2 = fname2.split("\\")[-1]
             cv2.putText(color2, f'file={filename2}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)  
         
-        
-        result_image = keep_curve_inside_green_box(color2, search_area_left, search_area_top, search_area_right, search_area_bottom)
-
-
         cv2.imshow('img1', color1)
-        cv2.imshow('img2', color2)
-
-       # 显示结果图像
-        cv2.namedWindow('Result', cv2.WINDOW_NORMAL)  # 使用 cv2.WINDOW_NORMAL 来允许手动调整窗口大小
-        cv2.resizeWindow('Result', 700, 600)
-        cv2.imshow("Result", result_image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()      
-
-        
-        
+        cv2.imshow('img2', color2)        
 
         if (simulation):
             waitTime = 500
