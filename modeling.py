@@ -14,8 +14,8 @@ def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     A, B, C - параметры плоскости, в которой перемещается частица
     g - ускорение свободного падения
     '''
-    vx0 = -v0 * np.cos(alpha)
-    vy0 = v0 * np.sin(alpha)
+    vx0 = v0 * np.cos(np.radians(alpha))
+    vy0 = -v0 * np.sin(np.radians(alpha))
     x = x0 + vx0 * t
     y = y0 + vy0 * t + 0.5 * g * t ** 2
     z = (A * x + B * y + C)
@@ -134,7 +134,10 @@ def add_intensity_subpixel(img, d, x0_list, y0_list, delta_x, delta_y, old_varia
 
                     #  Проверка на выход за границы изображения
                     try:
-                        img[y_round + y - rpx_y // 2, x_round + x - rpx_x // 2] += np.sum(g[y1:y2, x1:x2]) * (delta_x * delta_y)
+                        x_cur = x_round + x - rpx_x // 2
+                        y_cur = y_round + y - rpx_y // 2
+                        if x_cur >= 0 and  y_cur >=0:
+                            img[y_round + y - rpx_y // 2, x_round + x - rpx_x // 2] += np.sum(g[y1:y2, x1:x2]) * (delta_x * delta_y)
                     except IndexError:
                         pass
    
@@ -193,16 +196,16 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
 # assume we have the 3D trajectory stored in variable "trajectory_3d"
     trajectory_3d = np.array(list(zip(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)))
     cam1 = {
-    'R': parameters.cam1_R,
-    'T': parameters.cam1_T,
-    'K': parameters.cam1_K,
-    'dist': parameters.cam1_dist
+        'R': parameters.cam1_R,
+        'T': parameters.cam1_T,
+        'K': parameters.cam1_K,
+        'dist': parameters.cam1_dist
     }
     cam2 = {
-    'R': parameters.cam2_R,
-    'T': parameters.cam2_T,
-    'K': parameters.cam2_K,
-    'dist': parameters.cam2_dist
+        'R': parameters.cam2_R,
+        'T': parameters.cam2_T,
+        'K': parameters.cam2_K,
+        'dist': parameters.cam2_dist
     }
     # project the 3D points onto the image planes of cam1 and cam2
     projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
@@ -210,18 +213,20 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     H = parameters.image_height
     W = parameters.image_width
 
-    not_valid_points = len(projected_points_cam1[projected_points_cam1[:,0] < 0]) + \
-                       len(projected_points_cam1[projected_points_cam1[:,0] > W]) + \
-                       len(projected_points_cam1[projected_points_cam1[:,1] < 0]) + \
-                       len(projected_points_cam1[projected_points_cam1[:,1] > H]) + \
-                       len(projected_points_cam2[projected_points_cam1[:,0] < 0]) + \
-                       len(projected_points_cam2[projected_points_cam1[:,0] > W]) + \
-                       len(projected_points_cam2[projected_points_cam1[:,1] < 0]) + \
-                       len(projected_points_cam2[projected_points_cam1[:,1] > H])
+    THRESHOLD = 0.25
+
+    not_valid_points_1 = len(projected_points_cam1[projected_points_cam1[:,0] < 0]) + \
+                         len(projected_points_cam1[projected_points_cam1[:,0] > W]) + \
+                         len(projected_points_cam1[projected_points_cam1[:,1] < 0]) + \
+                         len(projected_points_cam1[projected_points_cam1[:,1] > H])
+                         
+    not_valid_points_2 = len(projected_points_cam2[projected_points_cam2[:,0] < 0]) + \
+                         len(projected_points_cam2[projected_points_cam2[:,0] > W]) + \
+                         len(projected_points_cam2[projected_points_cam2[:,1] < 0]) + \
+                         len(projected_points_cam2[projected_points_cam2[:,1] > H])
     
-    if not_valid_points > 0:
-        #return None, None
-        pass 
+    if not_valid_points_1 / len(projected_points_cam1) > THRESHOLD or not_valid_points_2 / len(projected_points_cam2) > THRESHOLD:
+        return None, None
    
     img1 = np.zeros((H, W), dtype=float)
     img2 = np.zeros((H, W), dtype=float)

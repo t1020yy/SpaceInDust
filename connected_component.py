@@ -52,11 +52,11 @@ class Connected_component:
 
 
     @classmethod
-    def filter_components(cls, components, stats, raw_image, binary_image, labels, labels_sparse, area_threshold=50, swt=False):
+    def filter_components(cls, components, stats, raw_image, binary_image, labels, labels_sparse, area_threshold_min=50, area_threshold_max=5*10**5, swt=False):
         filtered_components = []
         k = 0
         for i in range(1, components):
-            if stats[i][4] >= area_threshold:
+            if stats[i][4] >= area_threshold_min and stats[i][4] <= area_threshold_max:
                 coords = np.unravel_index(labels_sparse[i].data, labels.shape)
                 points = tuple(zip(coords[1], coords[0]))
                 filtered_components.append(Connected_component(raw_image, binary_image, k, stats[i], points, swt))
