@@ -1,21 +1,17 @@
 import json
 import glob
 import pickle
-import random
 from typing import List, Tuple
 
 import cv2
 import numpy as np
-import os
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 
-import modeling
 from report import make_report
-from excel_report import save_tracks_to_excel
 from particle_track import Particle_track
+from excel_report import save_tracks_to_excel
 from connected_component import Connected_component
-from modeling_parameters import ModelingParabolaParameters
 
 
 RECTIFY_IMAGES = False
