@@ -178,6 +178,65 @@ def find_corresponding_component(
     return cur_component, matched_component
 
 
+def display_processing_results(
+        img1: np.ndarray,
+        img2: np.ndarray,
+        con_components1: List[Connected_component],
+        con_components2: List[Connected_component],
+        cur_component: Connected_component,
+        matched_component: Connected_component,
+        filename1: str, 
+        filename2: str,
+        draw_graphics: bool, wait_time: int=0
+    ) -> int:
+    '''
+    Отображает результаты обработки
+    '''
+    cv2.namedWindow('img1', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('img1', 700, 600)
+    cv2.namedWindow('img2', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('img2', 700, 600)
+    cv2.namedWindow('img3', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('img3', 300, 300)
+    cv2.namedWindow('img4', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('img4', 300, 300)
+
+    if draw_graphics:
+        for component in con_components1:
+            img1 = component.draw_component(img1)
+            point = (component.left, component.top)
+            cv2.putText(img1, f'id={component.index}', point, cv2.FONT_HERSHEY_TRIPLEX, 1.5, (255, 0, 0), 2)
+
+        for component in con_components2:
+            img2 = component.draw_component(img2)
+            point = (component.left, component.top)
+            cv2.putText(img2, f'id={component.index}', point, cv2.FONT_HERSHEY_TRIPLEX, 1.5, (255, 0, 0), 2)
+
+        if cur_component is not None:
+            cv2.rectangle(img2, (cur_component.left, cur_component.top),
+                                (cur_component.right, cur_component.bottom), (0,255,0), 3)
+            cv2.imshow('img4', cur_component.visualized_img)
+        else:
+            cv2.imshow('img4', np.zeros((1,1), dtype=np.byte))
+        if matched_component is not None:
+            cv2.rectangle(img1, (matched_component.left, matched_component.top),
+                                    (matched_component.right, matched_component.bottom), (0,255,0), 3)
+            cv2.imshow('img3', matched_component.visualized_img)
+        else:
+            cv2.imshow('img3', np.zeros((1,1), dtype=np.byte))
+    
+    cv2.putText(img1, f'file={filename1}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)
+
+    cv2.putText(img2, f'file={filename2}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)  
+    
+    cv2.imshow('img1', img1)
+    cv2.imshow('img2', img2)        
+
+    key = cv2.waitKey(wait_time)
+    
+    return key
+
+
 def main_processing_loop():
     
     with open('experiments.json', 'r', encoding='utf8') as f:
@@ -215,15 +274,6 @@ def main_processing_loop():
         print(f'Calibration data is not founded by path "{path_to_calibration_file}"') 
 
     tracks = []
-
-    cv2.namedWindow('img1', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('img1', 700, 600)
-    cv2.namedWindow('img2', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('img2', 700, 600)
-    cv2.namedWindow('img3', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('img3', 300, 300)
-    cv2.namedWindow('img4', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('img4', 300, 300)
 
     do_processing = True
     current_position = 0
@@ -267,41 +317,18 @@ def main_processing_loop():
         color1 = cv2.cvtColor(binary_img1, cv2.COLOR_GRAY2BGR)
         color2 = cv2.cvtColor(binary_img2, cv2.COLOR_GRAY2BGR)
 
-        if draw_graphics:
-            for component in con_components1:
-                color1 = component.draw_component(color1)
-                point = (component.left, component.top)
-                cv2.putText(color1, f'id={component.index}', point, cv2.FONT_HERSHEY_TRIPLEX, 1.5, (255, 0, 0), 2)
-
-            for component in con_components2:
-                color2 = component.draw_component(color2)
-                point = (component.left, component.top)
-                cv2.putText(color2, f'id={component.index}', point, cv2.FONT_HERSHEY_TRIPLEX, 1.5, (255, 0, 0), 2)
-
-        if draw_graphics:
-            if cur_component is not None:
-                cv2.rectangle(color2, (cur_component.left, cur_component.top),
-                                    (cur_component.right, cur_component.bottom), (0,255,0), 3)
-                cv2.imshow('img4', cur_component.visualized_img)
-            else:
-                cv2.imshow('img4', np.zeros((1,1), dtype=np.byte))
-            if matched_component is not None:
-                cv2.rectangle(color1, (matched_component.left, matched_component.top),
-                                      (matched_component.right, matched_component.bottom), (0,255,0), 3)
-                cv2.imshow('img3', matched_component.visualized_img)
-            else:
-                cv2.imshow('img3', np.zeros((1,1), dtype=np.byte))
-        
-        filename1 = fname1.split("\\")[-1]
-        cv2.putText(color1, f'file={filename1}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)
-            
-        filename2 = fname2.split("\\")[-1]
-        cv2.putText(color2, f'file={filename2}', (10,30), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)  
-        
-        cv2.imshow('img1', color1)
-        cv2.imshow('img2', color2)        
-
-        key = cv2.waitKey(0)
+        key = display_processing_results(
+            color1,
+            color2,
+            con_components1,
+            con_components2,
+            cur_component, 
+            matched_component,
+            fname1.split("\\")[-1],
+            fname2.split("\\")[-1],
+            draw_graphics,
+            wait_time=0
+        )
 
         if key==27:    # Esc key to stop
             break
