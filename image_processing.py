@@ -201,6 +201,12 @@ def display_processing_results(
     cv2.namedWindow('img4', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('img4', 300, 300)
 
+    if len(img1.shape) < 3:
+        img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+
+    if len(img2.shape) < 3:
+        img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+
     if draw_graphics:
         for component in con_components1:
             img1 = component.draw_component(img1)
@@ -314,12 +320,9 @@ def main_processing_loop():
         
         cur_component, matched_component = find_corresponding_component(con_components1, con_components2, current_id, preproc_img1, binary_img1, search_area_range)
 
-        color1 = cv2.cvtColor(binary_img1, cv2.COLOR_GRAY2BGR)
-        color2 = cv2.cvtColor(binary_img2, cv2.COLOR_GRAY2BGR)
-
         key = display_processing_results(
-            color1,
-            color2,
+            binary_img1,
+            binary_img2,
             con_components1,
             con_components2,
             cur_component, 
@@ -387,7 +390,7 @@ def main_processing_loop():
         elif key == 112: # p
             draw_tracks(tracks)
         elif key == 114: # r
-            drawRectifiedImages(color1, color2)
+            drawRectifiedImages(binary_img1, binary_img2)
         elif key == 116: # t
             make_report(tracks)
         elif key == 118: # v
