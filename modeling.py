@@ -13,6 +13,11 @@ def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     t - время для которого необходимо вернуть координаты
     A, B, C - параметры плоскости, в которой перемещается частица
     g - ускорение свободного падения
+
+    Траектория движения частицы будет соответствовать параболе y = a*x**2 + b*x + c, где
+    a = g / (2 * vx0**2)
+    b = 1 / vx0 * (vy0 - x0 * g / vx0)
+    c = y0 + x0 / vx0 * (x0 * g / (2 * vx0) - vy0)
     '''
     vx0 = v0 * np.cos(np.radians(alpha))
     vy0 = -v0 * np.sin(np.radians(alpha))
@@ -226,7 +231,7 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
                          len(projected_points_cam2[projected_points_cam2[:,1] > H])
     
     if not_valid_points_1 / len(projected_points_cam1) > THRESHOLD or not_valid_points_2 / len(projected_points_cam2) > THRESHOLD:
-        return None, None
+        return None, None, None
    
     img1 = np.zeros((H, W), dtype=float)
     img2 = np.zeros((H, W), dtype=float)
@@ -237,4 +242,4 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     img1_1 = (img1_1 / np.max(img1_1) * 30).astype(np.uint8)
     img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
     
-    return img1_1, img2_1
+    return img1_1, img2_1, trajectory_3d
