@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from modeling import get_simulated_image
 from particle_track import Particle_track
 from modeling_parameters import ModelingParabolaParameters
-from image_processing import find_corresponding_component, get_connected_components, main_processing_loop, preprocess_image
+from image_processing import display_processing_results, find_corresponding_component, get_connected_components, preprocess_image
 
 
 def process_images(img1, img2):
@@ -16,7 +16,7 @@ def process_images(img1, img2):
 
     cur_component, matched_component = find_corresponding_component(con_components1, con_components2, 0, preproc_img1, binary_img1, 600)
 
-    return cur_component, matched_component
+    return con_components1, con_components2, cur_component, matched_component
     
 
 if __name__ == "__main__":
@@ -39,7 +39,20 @@ if __name__ == "__main__":
 
         img1, img2 = get_simulated_image(param)
 
-        cur_component, matched_component = process_images(img1, img2)
+        con_components1, con_components2, cur_component, matched_component = process_images(img1, img2)
+
+        key = display_processing_results(
+            img1,
+            img2,
+            con_components1,
+            con_components2,
+            cur_component, 
+            matched_component,
+            'Modeled image for cam #1',
+            'Modeled image for cam #2',
+            True,
+            wait_time=1000
+        )
 
         cameraMatrix1 = param.cam1_K
         distCoeffs1 = param.cam1_dist
