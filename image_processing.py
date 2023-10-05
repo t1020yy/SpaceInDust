@@ -78,8 +78,11 @@ def draw_tracks(tracks):
         plt.show()
 
     
-def preprocess_image(img, threshold, do_morph=False, img_to_sub=None):
-
+def preprocess_image(img: np.ndarray, threshold: int, do_morph: bool=False, img_to_sub: np.ndarray=None) -> Tuple[np.ndarray, np.ndarray]:
+    '''
+    Производит предобработку изображений: вычитание фонового изображения (если задано),
+    бинаризацию и морфологическую обработку (если задано)
+    '''
     if len(img.shape) > 2:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     else:
@@ -99,8 +102,10 @@ def preprocess_image(img, threshold, do_morph=False, img_to_sub=None):
     return res, img_binary
 
 
-def get_connected_components(img, binary_img):
-
+def get_connected_components(img: np.ndarray, binary_img: np.ndarray) -> List[Connected_component]:
+    '''
+    Находит связанные компоненты на изображении
+    '''
     nb_components, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_img, connectivity=8)
 
     cols = np.arange(labels.size)
@@ -111,7 +116,16 @@ def get_connected_components(img, binary_img):
     return con_components
 
 
-def find_corresponding_component(con_components1, con_components2, current_id, preproc_img1, bianry_img1, search_area_range):
+def find_corresponding_component(
+        con_components1: List[Connected_component], 
+        con_components2: List[Connected_component], 
+        current_id: int, 
+        preproc_img1: np.ndarray, 
+        bianry_img1: np.ndarray, 
+        search_area_range) -> Tuple[Connected_component, Connected_component]:
+    '''
+    Находит соответсвующие связанные компоненты на двух изображениях
+    '''
 
     cur_component = None
     matched_component = None
@@ -164,7 +178,7 @@ def find_corresponding_component(con_components1, con_components2, current_id, p
     return cur_component, matched_component
 
 
-def main_processing_loop() -> List[Particle_track]:
+def main_processing_loop():
     
     with open('experiments.json', 'r', encoding='utf8') as f:
         experiments = json.load(f)
