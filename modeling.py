@@ -40,10 +40,14 @@ def calculate_trajectory(x0, y0, v0, alpha, A, B, C, dt, max_time=3):
     '''
     t = 0
     trajectory = []
+    para_time = ModelingParabolaParameters()
+    intersection_start = max(0 - para_time.delta_t, para_time.expose_time_start)
+    intersection_end = min(max_time - para_time.delta_t, para_time.expose_time_end)
 
-    while t < max_time:
-        (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t, A, B, C)
-        trajectory.append((x, y, z))
+    while t <= intersection_end:
+        if t >= intersection_start:
+            (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t, A, B, C)
+            trajectory.append((x, y, z))
         t += dt
 
     return np.array(trajectory)

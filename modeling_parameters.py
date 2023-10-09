@@ -11,6 +11,9 @@ class ModelingParabolaParameters:
         self.plane_parameter_A = 0 
         self.plane_parameter_B = 0
         self.plane_parameter_C = 420
+        self.expose_time_start = 0.01
+        self.expose_time_end = 0.06
+        self.delta_t = 0.01
         
         self.interval_time = 0.0001
 
