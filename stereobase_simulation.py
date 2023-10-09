@@ -37,8 +37,7 @@ if __name__ == "__main__":
 
     for param in parameters:
 
-        img1, img2 = get_simulated_image(param)
-
+        img1, img2, _ = get_simulated_image(param)
         con_components1, con_components2, cur_component, matched_component = process_images(img1, img2)
 
         key = display_processing_results(
