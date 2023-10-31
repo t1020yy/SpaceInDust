@@ -28,21 +28,35 @@ def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     return (x, y, z)
 
 
-def calculate_trajectory(x0, y0, v0, alpha, A, B, C, dt, max_time=3):
+def calculate_trajectory(parameters: ModelingParabolaParameters):
     '''
     Возвращает массив координат частицы в соответствии с заданными параметрами левитации
-    x0, y0 - координаты начала траектории (взлета, отрыва)
-    v0 - начальная скорость
-    alpha - начальный угол взлета
-    A, B, C - параметры плоскости, в которой перемещается частица
-    dt - шаг расчета траектории по времени
-    max_time - время полета частицы
+    parameters - параметры моделирования параболы    
     '''
+    # Координаты начального положения частицы [мм]
+    x0 = parameters.x_start_trajectory
+    y0 = parameters.y_start_trajectory
+    
+    # Начальная скорость [мм/с]
+    v0 = parameters.start_speed
+
+    # Угол взлета
+    alpha = parameters.start_angle
+
+    # Параметры плоскости в которой происходит левитация
+    A = parameters.plane_parameter_A
+    B = parameters.plane_parameter_B
+    C = parameters.plane_parameter_C
+
+    # Шаг по времени для расчета координат траектории частицы [с]
+    dt = parameters.interval_time
+
     t = 0
-    trajectory = []
-    para_time = ModelingParabolaParameters()
-    intersection_start = max(0 - para_time.delta_t, para_time.expose_time_start)
-    intersection_end = min(max_time - para_time.delta_t, para_time.expose_time_end)
+    max_time = 2 * v0 * np.sin(np.radians(alpha)) / (9.81*10**3)
+
+    trajectory = []    
+    intersection_start = max(0, parameters.expose_time_start)
+    intersection_end = min(max_time, parameters.expose_time_start + parameters.expose_time)
 
     while t <= intersection_end:
         if t >= intersection_start:
@@ -172,31 +186,8 @@ def project_trajectory_3d(cam1, cam2, trajectory_3d):
 
 
 def get_simulated_image(parameters: ModelingParabolaParameters):
-    d = parameters.particle_diameter
     
-    # Координаты начального положения частицы [мм]
-    x0 = parameters.x_start_trajectory
-    y0 = parameters.y_start_trajectory
-    
-    # Начальная скорость [мм/с]
-    v0 = parameters.start_speed
-
-    # Угол взлета
-    alpha = parameters.start_angle
-
-    # Параметры плоскости в которой происходит левитация
-    A = parameters.plane_parameter_A
-    B = parameters.plane_parameter_B
-    C = parameters.plane_parameter_C
-
-    # Шаг по времени для расчета координат траектории частицы [с]
-    dt = parameters.interval_time
-
-    # Шаг интегрирования 
-    delta_x = parameters.x_integration_step # mm
-    delta_y = parameters.y_integration_step
-
-    trajectory = calculate_trajectory(x0, y0, v0, alpha, A, B, C, dt = dt, max_time=0.1)
+    trajectory = calculate_trajectory(parameters)
 
     trajectory_2d_x = trajectory[:, 0]
     trajectory_2d_y = trajectory[:, 1]
@@ -236,6 +227,12 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     
     if not_valid_points_1 / len(projected_points_cam1) > THRESHOLD or not_valid_points_2 / len(projected_points_cam2) > THRESHOLD:
         return None, None, None
+    
+    d = parameters.particle_diameter
+
+    # Шаг интегрирования 
+    delta_x = parameters.x_integration_step # mm
+    delta_y = parameters.y_integration_step
    
     img1 = np.zeros((H, W), dtype=float)
     img2 = np.zeros((H, W), dtype=float)
