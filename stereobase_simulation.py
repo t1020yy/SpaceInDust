@@ -1,3 +1,6 @@
+import pickle
+import datetime
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -24,12 +27,14 @@ if __name__ == "__main__":
 
     parameters = []
     result = []
+    result_params = []
 
     for base in stereo_base:
         param = ModelingParabolaParameters()
         param.x_start_trajectory = -12 #mm
         param.y_start_trajectory = 15 #mm
         param.start_speed = 0.6 * 10**3 #mm/s
+        param.expose_time = 0.100
         param.cams_trans_vec_x = base
 
         parameters.append(param)
@@ -68,33 +73,19 @@ if __name__ == "__main__":
             particle.particle_radius = 100e-06
             particle.particle_density = 2200
             particle.voltage = 2500
-            particle.grid_height = 10
+            particle.grid_height = param.y_start_trajectory
             particle.image_name = "Modeled image"
 
             result.append(particle)
+            result_params.append((particle.Alpha, particle.V0, particle.surface, particle.parabola, particle.parameters))
             print(f'Сохранено {len(result)} треков')
         else:
             result.append(None)
             print(f'Не удалось найти стереопару параболы')
                                         
 
-    angle_err = []
-    velocity_err = []
-    base = []
+    file_name = f'modeling_results_{datetime.datetime.now(): %Y-%m-%d_%H-%M-%S}.pickle'
+    with open(file_name, 'wb') as f:
+        pickle.dump((parameters, result_params), f)
 
-    for i in range(len(parameters)):
-        if result[i] is not None:
-            parameter = parameters[i]
-            particle = result[i]
-
-            print(particle.parameters[1], particle.parameters[2])
-
-            angle_err.append(parameter.start_angle - np.abs(particle.Alpha))
-            velocity_err.append(parameter.start_speed * 10**-3 - particle.V0)
-            base.append(parameter.cams_trans_vec_x)
-        
-    print(angle_err)
-    print(velocity_err)
-
-    plt.plot(base, angle_err, 'bo')
-    plt.show()
+    print(f'Результаты сохранены в файл {file_name}')
