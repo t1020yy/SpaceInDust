@@ -188,12 +188,12 @@ class Particle_track:
         self._parabola = (*z, residuals)
 
     def _get_parameters(self):
-        grid_height = self.grid_height * 10 ** -3
+        grid_height = self.grid_height
         g = 9.81 # m/s^2
 
-        xxs = np.roots((self.parabola[0], self.parabola[1], self.parabola[2]))
+        xxs = np.roots((self.parabola[0], self.parabola[1], self.parabola[2] - grid_height))
 
-        V_y0 = (2 * g * np.abs(np.min(self.flatten_3d_points[:,0,1]) * 10**-3))**0.5 
+        V_y0 = (2 * g * np.abs(grid_height * 10**-3 - np.min(self.flatten_3d_points[:,0,1]) * 10**-3))**0.5 
         V_x = (g / (2 * self.parabola[0] / 10**-3))**0.5
         V_y = V_x * self.parabola[1] + (xxs[0] * 10**-3 * g) / V_x
         V0 = (V_x**2 + V_y**2)**0.5
