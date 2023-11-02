@@ -1,5 +1,6 @@
 import pickle
 import datetime
+import random
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -29,6 +30,7 @@ if __name__ == "__main__":
     parameters = []
     result = []
     result_params = []
+    cams_trans_vec_x = []
 
     for i in modeling_number:
         param = ModelingParabolaParameters()
@@ -37,7 +39,13 @@ if __name__ == "__main__":
         param.start_speed = 0.6 * 10**3 #mm/s
         param.expose_time_start = expose_time_starts[i] 
         param.expose_time = 0.100
-        param.particle_diameter = 0.01 + 0.01 * (i // 10)
+        # param.particle_diameter = 0.01 + 0.01 * (i // 10)
+        param.particle_diameter = 0.05
+        # param.start_angle = 40 + 0.8 * (i // 10)
+        # param.start_speed = (0.35 + 0.01 * (i // 10)) * 10**3 #mm/s
+        param.cams_trans_vec_x = 5.0 + 10 * random.random()
+
+        param.cams_rot_z = 0.01 + 20 * random.random()
 
         parameters.append(param)
 
