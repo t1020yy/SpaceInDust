@@ -3,7 +3,6 @@ import datetime
 import random
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 from modeling import get_simulated_image
 from particle_track import Particle_track
@@ -25,14 +24,13 @@ def process_images(img1, img2):
 
 if __name__ == "__main__":
     modeling_number = np.arange(10)
-    expose_time_starts = 0.050 - np.random.rand(modeling_number.shape[0]) * 0.100
     parameters = []
-    result = []
     result_params = []
     cams_trans_vec_x = [] 
 
-    cams_trans_vec_x_values = np.linspace(5,15,30)
-    cams_rot_y_values = np.linspace(0,0.7,30)
+    cams_trans_vec_x_values = np.linspace(10, 30, 30)
+    cams_rot_y_values = np.linspace(-10, 0, 30)
+
     for vec_x in cams_trans_vec_x_values:
         for rot_ys in cams_rot_y_values:
             for i in modeling_number:
@@ -40,12 +38,12 @@ if __name__ == "__main__":
                 param.x_start_trajectory = -12 #mm
                 param.y_start_trajectory = 15 #mm
                 param.start_speed = 0.6 * 10**3 #mm/s
-                param.expose_time_start = expose_time_starts[i] 
+                param.expose_time_start = 0.050 - random.random() * 0.100
                 param.expose_time = 0.100
                 # param.particle_diameter = 0.01 + 0.01 * (i // 10)
                 param.particle_diameter = 0.05
-                # param.start_angle = 40 + 0.8 * (i // 10)
-                # param.start_speed = (0.35 + 0.01 * (i // 10)) * 10**3 #mm/s
+                param.start_angle = 55 + 30 * random.random()
+                param.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
                 param.cams_trans_vec_x = vec_x
 
                 param.cams_rot_y = rot_ys
@@ -56,8 +54,10 @@ if __name__ == "__main__":
     for param in parameters:
 
         img1, img2, _ = get_simulated_image(param)
-        con_components1, con_components2, cur_component, matched_component = process_images(img1, img2)
+
         if img1 is not None and img2 is not None:
+            con_components1, con_components2, cur_component, matched_component = process_images(img1, img2)
+
             key = display_processing_results(
                 img1,
                 img2,
@@ -89,14 +89,13 @@ if __name__ == "__main__":
                 particle.grid_height = param.y_start_trajectory
                 particle.image_name = "Modeled image"
 
-                result.append(particle)
                 result_params.append((particle.Alpha, particle.V0, particle.surface, particle.parabola, particle.parameters))
-                print(f'Сохранено {len(result)} треков')
+                print(f'Сохранено {len(result_params)} треков')
             else:
-                result.append(None)
+                result_params.append(None)
                 print(f'Не удалось найти стереопару параболы')
         else:
-            result.append(None)
+            result_params.append(None)
             print(f'Не удалось смоделировать')
 
                                         
