@@ -188,59 +188,75 @@ def project_trajectory_3d(cam1, cam2, trajectory_3d):
 def get_simulated_image(parameters: ModelingParabolaParameters):
     
     trajectory = calculate_trajectory(parameters)
-
     trajectory_2d_x = trajectory[:, 0]
     trajectory_2d_y = trajectory[:, 1]
     trajectory_3d_z = trajectory[:, 2]
-
+    #Для всех изображений.
+    h = abs(np.max(trajectory_2d_y)-np.min(trajectory_2d_y))
+    # h_1 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[-1]) 
+    # h0 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[0]) 
+    # kk = min(h_1 , h0) / h
+      
 # assume we have the 3D trajectory stored in variable "trajectory_3d"
-    trajectory_3d = np.array(list(zip(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)))
-    cam1 = {
-        'R': parameters.cam1_R,
-        'T': parameters.cam1_T,
-        'K': parameters.cam1_K,
-        'dist': parameters.cam1_dist
-    }
-    cam2 = {
-        'R': parameters.cam2_R,
-        'T': parameters.cam2_T,
-        'K': parameters.cam2_K,
-        'dist': parameters.cam2_dist
-    }
-    # project the 3D points onto the image planes of cam1 and cam2
-    projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
+    if trajectory_2d_y[-1]-np.min(trajectory_2d_y) > 0.025 * h and trajectory_2d_y[0] - trajectory_2d_y[-1] > 0.2 * h:
+        h_condition_met = abs(np.max(trajectory_2d_y) - np.min(trajectory_2d_y))
+        h_1_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[-1])
+        h0_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[0])
+        kk_condition_met = min(h_1_condition_met, h0_condition_met) / h_condition_met
+        trajectory_3d = np.array(list(zip(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)))
+        cam1 = {
+            'R': parameters.cam1_R,
+            'T': parameters.cam1_T,
+            'K': parameters.cam1_K,
+            'dist': parameters.cam1_dist
+        }
+        cam2 = {
+            'R': parameters.cam2_R,
+            'T': parameters.cam2_T,
+            'K': parameters.cam2_K,
+            'dist': parameters.cam2_dist
+        }
+        # project the 3D points onto the image planes of cam1 and cam2
+        projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
 
-    H = parameters.image_height
-    W = parameters.image_width
+        H = parameters.image_height
+        W = parameters.image_width
 
-    THRESHOLD = 0.25
+        THRESHOLD = 0.25
 
-    not_valid_points_1 = len(projected_points_cam1[projected_points_cam1[:,0] < 0]) + \
-                         len(projected_points_cam1[projected_points_cam1[:,0] > W]) + \
-                         len(projected_points_cam1[projected_points_cam1[:,1] < 0]) + \
-                         len(projected_points_cam1[projected_points_cam1[:,1] > H])
-                         
-    not_valid_points_2 = len(projected_points_cam2[projected_points_cam2[:,0] < 0]) + \
-                         len(projected_points_cam2[projected_points_cam2[:,0] > W]) + \
-                         len(projected_points_cam2[projected_points_cam2[:,1] < 0]) + \
-                         len(projected_points_cam2[projected_points_cam2[:,1] > H])
-    
-    if not_valid_points_1 / len(projected_points_cam1) > THRESHOLD or not_valid_points_2 / len(projected_points_cam2) > THRESHOLD:
-        return None, None, None
-    
-    d = parameters.particle_diameter
+        not_valid_points_1 = len(projected_points_cam1[projected_points_cam1[:,0] < 0]) + \
+                            len(projected_points_cam1[projected_points_cam1[:,0] > W]) + \
+                            len(projected_points_cam1[projected_points_cam1[:,1] < 0]) + \
+                            len(projected_points_cam1[projected_points_cam1[:,1] > H])
+                            
+        not_valid_points_2 = len(projected_points_cam2[projected_points_cam2[:,0] < 0]) + \
+                            len(projected_points_cam2[projected_points_cam2[:,0] > W]) + \
+                            len(projected_points_cam2[projected_points_cam2[:,1] < 0]) + \
+                            len(projected_points_cam2[projected_points_cam2[:,1] > H])
+        
+        if not_valid_points_1 / len(projected_points_cam1) > THRESHOLD or not_valid_points_2 / len(projected_points_cam2) > THRESHOLD:
+            return None, None, None
+        
+        d = parameters.particle_diameter
 
-    # Шаг интегрирования 
-    delta_x = parameters.x_integration_step # mm
-    delta_y = parameters.y_integration_step
-   
-    img1 = np.zeros((H, W), dtype=float)
-    img2 = np.zeros((H, W), dtype=float)
+        # Шаг интегрирования 
+        delta_x = parameters.x_integration_step # mm
+        delta_y = parameters.y_integration_step
     
-    img1_1 = add_intensity_subpixel(img1, d, projected_points_cam1[:,0], projected_points_cam1[:,1], delta_x, delta_y)
-    img2_1 = add_intensity_subpixel(img2, d, projected_points_cam2[:,0], projected_points_cam2[:,1], delta_x, delta_y)
+        img1 = np.zeros((H, W), dtype=float)
+        img2 = np.zeros((H, W), dtype=float)
+        
+        img1_1 = add_intensity_subpixel(img1, d, projected_points_cam1[:,0], projected_points_cam1[:,1], delta_x, delta_y)
+        img2_1 = add_intensity_subpixel(img2, d, projected_points_cam2[:,0], projected_points_cam2[:,1], delta_x, delta_y)
+        
+        img1_1 = (img1_1 / np.max(img1_1) * 30).astype(np.uint8)
+        img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
+        
+        return img1_1, img2_1, trajectory_3d, kk_condition_met, h_condition_met
+    else:
+        h_condition_met = None
+        h_1_condition_met = None
+        h0_condition_met = None
+        kk_condition_met = None
+        return None, None, None, None, None
     
-    img1_1 = (img1_1 / np.max(img1_1) * 30).astype(np.uint8)
-    img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
-    
-    return img1_1, img2_1, trajectory_3d

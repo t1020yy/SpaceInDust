@@ -23,41 +23,63 @@ def process_images(img1, img2):
     
 
 if __name__ == "__main__":
-    modeling_number = np.arange(10)
+    modeling_number = np.arange(1000)
     parameters = []
     result_params = []
     cams_trans_vec_x = [] 
+    kk_values = []
+    h_values = []
 
-    cams_trans_vec_x_values = np.linspace(10, 30, 30)
-    cams_rot_y_values = np.linspace(-10, 0, 30)
+    # cams_trans_vec_x_values = np.linspace(10, 30, 30)
+    # cams_rot_y_values = np.linspace(-10, 0, 30)
 
-    for vec_x in cams_trans_vec_x_values:
-        for rot_ys in cams_rot_y_values:
-            for i in modeling_number:
-                param = ModelingParabolaParameters()
-                param.x_start_trajectory = -12 #mm
-                param.y_start_trajectory = 15 #mm
-                param.start_speed = 0.6 * 10**3 #mm/s
-                param.expose_time_start = 0.050 - random.random() * 0.100
-                param.expose_time = 0.100
+    # for vec_x in cams_trans_vec_x_values:
+    #     for rot_ys in cams_rot_y_values:
+    #         for i in modeling_number:
+    #             param = ModelingParabolaParameters()
+    #             param.x_start_trajectory = -12 #mm
+    #             param.y_start_trajectory = 15 #mm
+    #             # param.start_speed = 0.6 * 10**3 #mm/s
+    #             param.expose_time_start = 0.050 - random.random() * 0.100
+    #             param.expose_time = 0.100
+    #             # param.particle_diameter = 0.01 + 0.01 * (i // 10)
+    #             param.particle_diameter = 0.05
+    #             param.start_angle = 55 + 30 * random.random()
+    #             param.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
+    #             param.cams_trans_vec_x = vec_x
+
+    #             param.cams_rot_y = rot_ys
+
+    #             parameters.append(param)
+     
+    for i in modeling_number:
+        param = ModelingParabolaParameters()
+        param.x_start_trajectory = -12 #mm
+        param.y_start_trajectory = 15 #mm
+        # param.start_speed = 0.6 * 10**3 #mm/s
+        param.expose_time_start = 0.050 - random.random() * 0.100
+        param.expose_time = 0.100
                 # param.particle_diameter = 0.01 + 0.01 * (i // 10)
-                param.particle_diameter = 0.05
-                param.start_angle = 55 + 30 * random.random()
-                param.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
-                param.cams_trans_vec_x = vec_x
+        param.particle_diameter = 0.05
+        # param.start_angle = 55 + 30 * random.random()
+        param.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
+        # param.cams_trans_vec_x = vec_x
 
-                param.cams_rot_y = rot_ys
-
-                parameters.append(param)
-
+        # param.cams_rot_y = rot_ys
+        parameters.append(param)
+    
 
     for param in parameters:
 
-        img1, img2, _ = get_simulated_image(param)
+        img1, img2, _, kk, h = get_simulated_image(param)
+        if kk is not None and h is not None:
+            kk_values.append(kk)
+            h_values.append(h)
+        else:
+            pass
 
         if img1 is not None and img2 is not None:
             con_components1, con_components2, cur_component, matched_component = process_images(img1, img2)
-
             key = display_processing_results(
                 img1,
                 img2,
@@ -97,10 +119,10 @@ if __name__ == "__main__":
         else:
             result_params.append(None)
             print(f'Не удалось смоделировать')
-
+        
                                         
     file_name = f'modeling_results_{datetime.datetime.now(): %Y-%m-%d_%H-%M-%S}.pickle'
     with open(file_name, 'wb') as f:
-        pickle.dump((parameters, result_params), f)
+        pickle.dump((parameters, result_params, kk_values, h_values), f)
 
     print(f'Результаты сохранены в файл {file_name}')
