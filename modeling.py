@@ -24,9 +24,13 @@ def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     x = x0 + vx0 * t
     y = y0 + vy0 * t + 0.5 * g * t ** 2
     z = (A * x + B * y + C)
-    
     return (x, y, z)
 
+def get_a_b_c(v0, alpha, x0, y0, g = 9.81*10**3):
+    a = g / (2 * (v0 * np.cos(np.radians(alpha))) ** 2)
+    b = - np.tan(np.radians(alpha)) - x0 * g / ((v0 * np.cos(np.radians(alpha)))**2)
+    c = y0 + g * x0 / (2 * (v0 * np.cos(np.radians(alpha))) **2) + x0 * np.tan(np.radians(alpha))
+    return a, b ,c
 
 def calculate_trajectory(parameters: ModelingParabolaParameters):
     '''
@@ -60,7 +64,7 @@ def calculate_trajectory(parameters: ModelingParabolaParameters):
 
     while t <= intersection_end:
         if t >= intersection_start:
-            (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t, A, B, C)
+            (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t, A, B, C)           
             trajectory.append((x, y, z))
         t += dt
 
@@ -193,17 +197,19 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     trajectory_3d_z = trajectory[:, 2]
     #Для всех изображений.
     h = abs(np.max(trajectory_2d_y)-np.min(trajectory_2d_y))
-    # h_1 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[-1]) 
-    # h0 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[0]) 
-    # kk = min(h_1 , h0) / h
-      
-    if np.min((trajectory_2d_y[0], trajectory_2d_y[-1])) - np.min(trajectory_2d_y) < 0.1 * h or np.abs(trajectory_2d_y[0] - trajectory_2d_y[-1]) < 0.3 * h:
-        return None, None, None, None, None
+    h_1 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[-1]) 
+    h0 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[0]) 
+    kk = min(h_1 , h0) / h
+    dd = abs(trajectory_2d_x[0] - trajectory_2d_x[-1])
+
+    # if np.min((trajectory_2d_y[0], trajectory_2d_y[-1])) - np.min(trajectory_2d_y) < 0.1 * h or np.abs(trajectory_2d_y[0] - trajectory_2d_y[-1]) < 0.3 * h:
+    #     return None, None, None, None, None
     
-    h_condition_met = abs(np.max(trajectory_2d_y) - np.min(trajectory_2d_y))
-    h_1_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[-1])
-    h0_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[0])
-    kk_condition_met = min(h_1_condition_met, h0_condition_met) / h_condition_met
+    # h_condition_met = abs(np.max(trajectory_2d_y) - np.min(trajectory_2d_y))
+    # h_1_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[-1])
+    # h0_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[0])
+    # kk_condition_met = min(h_1_condition_met, h0_condition_met) / h_condition_met
+
     trajectory_3d = np.array(list(zip(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)))
     cam1 = {
         'R': parameters.cam1_R,
@@ -239,7 +245,6 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
         return None, None, None, None, None
     
     d = parameters.particle_diameter
-
     # Шаг интегрирования 
     delta_x = parameters.x_integration_step # mm
     delta_y = parameters.y_integration_step
@@ -253,4 +258,5 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     img1_1 = (img1_1 / np.max(img1_1) * 30).astype(np.uint8)
     img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
     
-    return img1_1, img2_1, trajectory_3d, kk_condition_met, h_condition_met
+    return img1_1, img2_1, trajectory_3d, kk, h, dd
+
