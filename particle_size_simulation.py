@@ -4,7 +4,7 @@ import random
 
 import numpy as np
 
-from modeling import get_simulated_image
+from modeling import get_simulated_image, get_a_b_c
 from particle_track import Particle_track
 from modeling_parameters import ModelingParabolaParameters
 from image_processing import display_processing_results, find_corresponding_component, get_connected_components, preprocess_image
@@ -23,13 +23,16 @@ def process_images(img1, img2):
     
 
 if __name__ == "__main__":
-    modeling_number = np.arange(1000)
+    modeling_number = np.arange(300)
     parameters = []
     result_params = []
     cams_trans_vec_x = [] 
     kk_values = []
     h_values = []
-
+    d_values = []
+    a_values = []
+    b_values = []
+    c_values = []
     # cams_trans_vec_x_values = np.linspace(10, 30, 30)
     # cams_rot_y_values = np.linspace(-10, 0, 30)
 
@@ -61,20 +64,28 @@ if __name__ == "__main__":
         param.expose_time = 0.100
                 # param.particle_diameter = 0.01 + 0.01 * (i // 10)
         param.particle_diameter = 0.05
-        # param.start_angle = 55 + 30 * random.random()
+        param.start_angle = 55 + 30 * random.random()
         param.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
+        # print("param.start_speed", param.start_speed)
         # param.cams_trans_vec_x = vec_x
-
-        # param.cams_rot_y = rot_ys
         parameters.append(param)
     
 
     for param in parameters:
-
-        img1, img2, _, kk, h = get_simulated_image(param)
+        result =get_simulated_image(param)
+        if len(result) ==6: 
+            img1, img2, _, kk, h, dd = result
+        else:
+            pass
+        a,b,c = get_a_b_c(param.start_speed, param.start_angle, param.x_start_trajectory, param.y_start_trajectory, g = 9.81*10**3)
+        a_values.append(a)
+        b_values.append(b)
+        c_values.append(c)
         if kk is not None and h is not None:
             kk_values.append(kk)
             h_values.append(h)
+            d_values.append(dd)
+
         else:
             pass
 
@@ -111,7 +122,8 @@ if __name__ == "__main__":
                 particle.grid_height = param.y_start_trajectory
                 particle.image_name = "Modeled image"
 
-                result_params.append((particle.Alpha, particle.V0, particle.surface, particle.parabola, particle.parameters))
+                result_params.append((particle.Alpha, particle.V0,  particle.surface, particle.parabola, particle.parameters))
+                # print("particle.V0", particle.V0)
                 print(f'Сохранено {len(result_params)} треков')
             else:
                 result_params.append(None)
@@ -123,6 +135,6 @@ if __name__ == "__main__":
                                         
     file_name = f'modeling_results_{datetime.datetime.now(): %Y-%m-%d_%H-%M-%S}.pickle'
     with open(file_name, 'wb') as f:
-        pickle.dump((parameters, result_params, kk_values, h_values), f)
+        pickle.dump((parameters, result_params, kk_values, h_values, d_values, a_values,b_values,c_values), f)
 
     print(f'Результаты сохранены в файл {file_name}')
