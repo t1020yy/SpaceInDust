@@ -195,12 +195,11 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     trajectory_2d_x = trajectory[:, 0]
     trajectory_2d_y = trajectory[:, 1]
     trajectory_3d_z = trajectory[:, 2]
-    #Для всех изображений.
-    h = abs(np.max(trajectory_2d_y)-np.min(trajectory_2d_y))
-    h_1 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[-1]) 
-    h0 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[0]) 
-    kk = min(h_1 , h0) / h
-    dd = abs(trajectory_2d_x[0] - trajectory_2d_x[-1])
+    # h = abs(np.max(trajectory_2d_y)-np.min(trajectory_2d_y))
+    # h_1 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[-1]) 
+    # h0 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[0]) 
+    # kk = min(h_1 , h0) / h
+    # dd = abs(trajectory_2d_x[0] - trajectory_2d_x[-1])
 
     # if np.min((trajectory_2d_y[0], trajectory_2d_y[-1])) - np.min(trajectory_2d_y) < 0.1 * h or np.abs(trajectory_2d_y[0] - trajectory_2d_y[-1]) < 0.3 * h:
     #     return None, None, None, None, None
@@ -225,6 +224,12 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     }
     # project the 3D points onto the image planes of cam1 and cam2
     projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
+
+    h = abs(np.max(projected_points_cam1[:, 1]) - np.min(projected_points_cam1[:, 1]))
+    h_1 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[-1, 1])
+    h0 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[0, 1])
+    kk = min(h_1, h0) / h
+    dd = abs(projected_points_cam1[0, 0] - projected_points_cam1[-1, 0])
 
     H = parameters.image_height
     W = parameters.image_width

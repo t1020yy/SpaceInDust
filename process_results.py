@@ -2,12 +2,25 @@ import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-import statsmodels.api as sm
-from scipy.optimize import curve_fit
 from modeling import get_a_b_c
 
+def calculate_relative_errors(values, values_1):
+    return [(v - v_1) / v * 100 for v, v_1 in zip(values, values_1)]
+def calculate_average_and_std_in_bins(values, bin_edges, errors):
+    num_bins = len(bin_edges) - 1
+    avg_errors = []
+    std_errors = []
 
-FILE_NAME = 'modeling_results_ 2023-11-13_20-48-04.pickle'
+    for i in range(num_bins):
+        indices_in_bin = np.where((values >= bin_edges[i]) & (values < bin_edges[i + 1]))[0]
+        errors_bin = [errors[j] for j in indices_in_bin]
+
+        avg_errors.append(abs(np.mean(errors_bin)))
+        std_errors.append(np.std(errors_bin))
+
+    return np.array(avg_errors), np.array(std_errors)
+
+FILE_NAME = 'modeling_results_ 2023-11-15_19-36-29.pickle'
 
 with open(FILE_NAME, 'rb') as f:
     parameters, result, kk_values, h_values, d_values, a_values, b_values, c_values = pickle.load(f)
@@ -25,6 +38,7 @@ c_err = []
 a_1_values = []
 b_1_values = []
 c_1_values = []
+
 for i in range(len(parameters)):
     # if result[i] is not None:
     if i < len(result) and result[i] is not None:
@@ -34,6 +48,7 @@ for i in range(len(parameters)):
         a_1_values.append(a_1)
         b_1_values.append(b_1)
         c_1_values.append(c_1)
+
         angle_err.append(abs(parameter.start_angle - np.abs(particle[0])))
         velocity_err.append(abs(parameter.start_speed * 10**-3 - particle[1]))
         # diameter.append(parameter.particle_diameter)
@@ -45,92 +60,74 @@ for i in range(len(parameters)):
         relative_rotation_y = np.degrees(np.arctan2(relative_rotation[2, 0], relative_rotation[0, 0])) 
         angle_between_cameras = np.abs(relative_rotation_y)
         angle_between_cameras_values.append(angle_between_cameras)
-a_err = [abs(a - a_1) for a, a_1 in zip(a_values, a_1_values)]
-b_err = [abs(b - b_1) for b, b_1 in zip(b_values, b_1_values)]
-c_err = [abs(c - c_1) for c, c_1 in zip(c_values, c_1_values)]
 
-# 创建一个包含3个子图的图表
+a_err_percent = calculate_relative_errors(a_values, a_1_values)
+b_err_percent = calculate_relative_errors(b_values, b_1_values)
+c_err_percent = calculate_relative_errors(c_values, c_1_values)
+
+num_bins = 70  # You can adjust this value based on your needs
+
+# Compute histogram of h_values
+hist, bin_edges = np.histogram(kk_values, bins=num_bins)
+avg_a_err_percent, std_a_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, a_err_percent)
+avg_b_err_percent, std_b_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, b_err_percent)
+avg_c_err_percent, std_c_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, c_err_percent)
+
 fig, axs = plt.subplots(1, 3, figsize=(16, 5))
+# Data for plotting
+data = [
+    {'label': 'a_err / a', 'avg': avg_a_err_percent, 'std': std_a_err_percent},
+    {'label': 'b_err / b', 'avg': avg_b_err_percent, 'std': std_b_err_percent},
+    {'label': 'c_err / c', 'avg': avg_c_err_percent, 'std': std_c_err_percent}
+]
 
-# 绘制第一个子图
-axs[0].plot(h_values, a_err, 'bo')
-axs[0].set_xlabel('dd', fontsize=16)
-axs[0].set_ylabel('a_err', fontsize=16)
-axs[0].tick_params(axis='both', labelsize=16)
-axs[0].grid()
+# Loop through the data and plot each subplot
+for i, subplot_data in enumerate(data):
+    ax = axs[i]
+    ax.errorbar(bin_edges[:-1], subplot_data['avg'], yerr=subplot_data['std'], fmt='o', color='b', ecolor='r', capsize=5)
+    ax.set_xlabel('kk', fontsize=16)
+    ax.set_ylabel(f'{subplot_data["label"]} (%)', fontsize=16)
+    ax.tick_params(axis='both', labelsize=16)
+    ax.grid()
 
-# 绘制第二个子图
-axs[1].plot(h_values, b_err, 'bo')
-axs[1].set_xlabel('dd', fontsize=16)
-axs[1].set_ylabel('b_err', fontsize=16)
-axs[1].tick_params(axis='both', labelsize=16)
-axs[1].grid()
-
-# 绘制第三个子图
-axs[2].plot(h_values, c_err, 'bo')
-axs[2].set_xlabel('dd', fontsize=16)
-axs[2].set_ylabel('c_err', fontsize=16)
-axs[2].tick_params(axis='both', labelsize=16)
-axs[2].grid()
-
-# 调整子图的布局，避免重叠
+# Adjust subplot layout to prevent overlap
 plt.tight_layout()
-
-# 显示图表
+# Display the plot
 plt.show()
 
-fig, ax = plt.subplots(figsize=(10, 5))
+# # Create a single figure with a 1x1 grid of subplots
+fig = plt.figure(figsize=(16, 5))
+ax = fig.add_subplot(111)
+# Plot each subplot within the larger subplot
+for subplot_data in data:
+    ax.errorbar(bin_edges[:-1], subplot_data['avg'], yerr=subplot_data['std'], fmt='o', label=f'{subplot_data["label"]} (%)', capsize=5)
 
-# 绘制 a_err、b_err 和 c_err 在同一子图中
-ax.plot(h_values, a_err, 'bo', label='a_err')
-ax.plot(h_values, b_err, 'ro', label='b_err')
-ax.plot(h_values, c_err, 'go', label='c_err')
-
-# 设置标签和标题
-ax.set_xlabel('dd', fontsize=16)
-ax.set_ylabel('Errors', fontsize=16)
+# Set labels and title
+ax.set_xlabel('kk', fontsize=16)
+ax.set_ylabel('Error (%)', fontsize=16)
 ax.tick_params(axis='both', labelsize=16)
 ax.grid()
-ax.legend()  # 添加图例
+ax.legend()
 
-# 显示图表
+# Display the plot
 plt.show()
 
-# 创建一个包含1个子图的图表
-fig, ax1 = plt.subplots(figsize=(10, 5))
+num_points_per_bin, _ = np.histogram(kk_values, bins=bin_edges)
 
-# 绘制第一个数据集
-line1, = ax1.plot(h_values, a_err, 'bo', label='a_err')
-ax1.set_xlabel('dd', fontsize=16)
-ax1.set_ylabel('a_err', color='b', fontsize=20)
-ax1.tick_params(axis='both', labelsize=16)
-ax1.grid()
+# Plot the number of points per bin
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot(bin_edges[:-1], num_points_per_bin, marker='o', linestyle='-', color='g')
+ax.set_xlabel('kk', fontsize=16)
+ax.set_ylabel('Number of Points', fontsize=16)
+ax.tick_params(axis='both', labelsize=16)
+ax.grid()
 
-# 创建第二个 y 轴，共享 x 轴
-ax2 = ax1.twinx()
-
-# 绘制第二个数据集
-line2, = ax2.plot(h_values, b_err, 'rx', label='b_err')
-ax2.set_ylabel('b_err', color='r', fontsize=20)
-ax2.tick_params(axis='both', labelsize=16)
-
-# 创建第三个 y 轴，共享 x 轴
-ax3 = ax1.twinx()
-
-# 将第三个轴移到右侧
-ax3.spines['right'].set_position(('outward', 60))
-line3, = ax3.plot(h_values, c_err, 'g^', label='c_err')
-ax3.set_ylabel('c_err', color='g', fontsize=20)
-ax3.tick_params(axis='both', labelsize=16)
-
-# 调整子图的布局，避免重叠
+# Display the plots
 plt.tight_layout()
-
-# 创建独立的图例，并设置它们的位置
-fig.legend([line1, line2, line3], ['a_err', 'b_err', 'c_err'], loc='upper right', bbox_to_anchor=(0.825, 0.95))
-
-# 显示图表
 plt.show()
+
+
+
 # plt.subplot(121)
 # plt.plot(d_values, a_err, 'bo')
 # plt.xlabel('kk', fontsize = 20)
@@ -373,4 +370,45 @@ plt.show()
 # plt.yticks(fontsize = 15)
 # plt.gca().xaxis.get_label().set_ha('center')  
 # plt.gca().yaxis.get_label().set_ha('center')
+# plt.show()
+
+# import numpy as np
+# import matplotlib.pyplot as plt
+
+# # 示例数据
+# x_values = np.linspace(0, 10, 100)
+# a_values = np.sin(x_values)
+# b_values = 0.5 * x_values  # 请替换为你的实际数据
+
+# # 计算 (a-b)/a
+# relative_errors = (a_values - b_values) / a_values
+
+# # 计算误差，这里简单使用标准差
+# std_errors = np.random.uniform(0, 0.1, len(x_values))
+
+# # 将误差转化为百分比
+# std_errors_percent = (std_errors / a_values) * 100
+
+# # 绘制曲线
+# fig, ax1 = plt.subplots()
+
+# # 绘制 (a-b)/a 的曲线
+# ax1.plot(x_values, relative_errors, label='(a-b)/a', color='blue')
+# ax1.set_xlabel('X-axis')
+# ax1.set_ylabel('(a-b)/a', color='blue')
+# ax1.tick_params(axis='y', labelcolor='blue')
+
+# # 创建次坐标轴，用于绘制误差曲线
+# ax2 = ax1.twinx()
+# ax2.errorbar(x_values, relative_errors, yerr=std_errors_percent, fmt='o', label='Error Bar', color='red')
+
+# # 设置次坐标轴的标签
+# ax2.set_ylabel('Error (%)', color='red')
+# ax2.tick_params(axis='y', labelcolor='red')
+
+# # 添加图例
+# ax1.legend(loc='upper left')
+# ax2.legend(loc='upper right')
+
+# # 显示图形
 # plt.show()
