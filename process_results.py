@@ -1,6 +1,7 @@
 import pickle
 
 import numpy as np
+import sympy as sp
 from matplotlib import pyplot as plt
 from modeling import get_a_b_c
 
@@ -20,7 +21,7 @@ def calculate_average_and_std_in_bins(values, bin_edges, errors):
 
     return np.array(avg_errors), np.array(std_errors)
 
-FILE_NAME = 'modeling_results_ 2023-11-15_19-36-29.pickle'
+FILE_NAME = 'modeling_results_ 2023-11-24_02-19-53.pickle'
 
 with open(FILE_NAME, 'rb') as f:
     parameters, result, kk_values, h_values, d_values, a_values, b_values, c_values = pickle.load(f)
@@ -38,6 +39,11 @@ c_err = []
 a_1_values = []
 b_1_values = []
 c_1_values = []
+g=9.81
+aa_values = []
+bb_values = []
+cc_values = []
+hg_values = []
 
 for i in range(len(parameters)):
     # if result[i] is not None:
@@ -48,6 +54,11 @@ for i in range(len(parameters)):
         a_1_values.append(a_1)
         b_1_values.append(b_1)
         c_1_values.append(c_1)
+
+        aa_values.append(particle[5])
+        bb_values.append(particle[6])
+        cc_values.append(particle[7])
+        hg_values.append(particle[8])
 
         angle_err.append(abs(parameter.start_angle - np.abs(particle[0])))
         velocity_err.append(abs(parameter.start_speed * 10**-3 - particle[1]))
@@ -61,70 +72,117 @@ for i in range(len(parameters)):
         angle_between_cameras = np.abs(relative_rotation_y)
         angle_between_cameras_values.append(angle_between_cameras)
 
-a_err_percent = calculate_relative_errors(a_values, a_1_values)
-b_err_percent = calculate_relative_errors(b_values, b_1_values)
-c_err_percent = calculate_relative_errors(c_values, c_1_values)
 
-num_bins = 70  # You can adjust this value based on your needs
+aa, bb, cc, hg, x00, v00, alpha1 = sp.symbols('aa bb cc hg hx00 v00 alpha1')
+x00 = ((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))
+v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*x00*g +2*x00**2*g*aa)**0.5
+alpha1 = bb + x00 * 2 * aa
+aa=np.mean(aa_values)
+bb=np.mean(bb_values)
+cc=np.mean(cc_values)
+hg=np.mean(hg_values)
+std_dev_aa = np.std(aa_values, ddof=0.5)
+std_dev_bb = np.std(bb_values, ddof=0.5)
+std_dev_cc = np.std(cc_values, ddof=0.5)
+std_dev_hg = np.std(hg_values, ddof=0.5)
 
-# Compute histogram of h_values
-hist, bin_edges = np.histogram(kk_values, bins=num_bins)
-avg_a_err_percent, std_a_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, a_err_percent)
-avg_b_err_percent, std_b_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, b_err_percent)
-avg_c_err_percent, std_c_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, c_err_percent)
+derivative_x00_aa = (-2.0*cc + 2.0*hg)/(2*aa*(-4*aa*(cc - hg) + bb**2)**0.5) - (-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(2*aa**2)
+derivative_x00_bb = (1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1)/(2*aa)
+derivative_x00_cc = -1.0/(-4*aa*(cc - hg) + bb**2)**0.5
+derivative_x00_hg = 1.0/(-4*aa*(cc - hg) + bb**2)**0.5
+delta_a = std_dev_aa / np.sqrt(len(aa_values))
+delta_b = std_dev_bb / np.sqrt(len(bb_values))
+delta_c = std_dev_cc / np.sqrt(len(cc_values))
+delta_hg = std_dev_hg / np.sqrt(len(hg_values))
 
-fig, axs = plt.subplots(1, 3, figsize=(16, 5))
-# Data for plotting
-data = [
-    {'label': 'a_err / a', 'avg': avg_a_err_percent, 'std': std_a_err_percent},
-    {'label': 'b_err / b', 'avg': avg_b_err_percent, 'std': std_b_err_percent},
-    {'label': 'c_err / c', 'avg': avg_c_err_percent, 'std': std_c_err_percent}
-]
+measurement_uncertainty_x0 = (derivative_x00_aa**2*delta_a**2+ derivative_x00_bb**2*delta_b**2+derivative_x00_cc**2*delta_c**2+derivative_x00_hg**2*delta_hg**2)**0.5 
+# v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*x00*g +2*x00**2*g*aa)**0.5
+v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))*g +2*((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))**2*g*aa)**0.5
+derivative_v00_aa=3.132*(0.5*bb*(-2.0*cc + 2.0*hg)/(aa*(-4*aa*(cc - hg) + bb**2)**0.5) + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)*(-2.0*cc + 2.0*hg)/(aa*(-4*aa*(cc - hg) + bb**2)**0.5) - 0.25*bb**2/aa**2 - 0.5*bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa**2 - 0.25*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa**2 - 0.25/aa**2)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+derivative_v00_bb=3.132*(0.5*bb*(1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1)/aa + 0.5*bb/aa + 0.25*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)*(2.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 2)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+derivative_v00_cc=3.132*(-1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1.0*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(-4*aa*(cc - hg) + bb**2)**0.5)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+derivative_v00_hg=3.132*(1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 + 1.0*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(-4*aa*(cc - hg) + bb**2)**0.5)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+measurement_uncertainty_v0 = (derivative_v00_aa**2*delta_a**2+ derivative_v00_bb**2*delta_b**2+derivative_v00_cc**2*delta_c**2+derivative_v00_hg**2*delta_hg**2)**0.5 
+# alpha1 = bb + x00 * 2 * aa
+alpha1 = bb + ((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa)) * 2 * aa
+derivative_alpha1_aa=(-2.0*cc + 2.0*hg)/(-4*aa*(cc - hg) + bb**2)**0.5
+derivative_alpha1_bb=1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5
+derivative_alpha1_cc=-2.0*aa/(-4*aa*(cc - hg) + bb**2)**0.5
+derivative_alpha1_hg=2.0*aa/(-4*aa*(cc - hg) + bb**2)**0.5
+measurement_uncertainty_alpha1 = (derivative_alpha1_aa**2*delta_a**2+ derivative_alpha1_bb**2*delta_b**2+derivative_alpha1_cc**2*delta_c**2+derivative_alpha1_hg**2*delta_hg**2)**0.5 
+# alpha1 = np.rad2deg(alpha1)
 
-# Loop through the data and plot each subplot
-for i, subplot_data in enumerate(data):
-    ax = axs[i]
-    ax.errorbar(bin_edges[:-1], subplot_data['avg'], yerr=subplot_data['std'], fmt='o', color='b', ecolor='r', capsize=5)
-    ax.set_xlabel('kk', fontsize=16)
-    ax.set_ylabel(f'{subplot_data["label"]} (%)', fontsize=16)
-    ax.tick_params(axis='both', labelsize=16)
-    ax.grid()
+# print("测量值x00:", x00_values)
 
-# Adjust subplot layout to prevent overlap
-plt.tight_layout()
-# Display the plot
-plt.show()
+print(measurement_uncertainty_x0)
+print(measurement_uncertainty_v0)
+print(measurement_uncertainty_alpha1)
 
-# # Create a single figure with a 1x1 grid of subplots
-fig = plt.figure(figsize=(16, 5))
-ax = fig.add_subplot(111)
-# Plot each subplot within the larger subplot
-for subplot_data in data:
-    ax.errorbar(bin_edges[:-1], subplot_data['avg'], yerr=subplot_data['std'], fmt='o', label=f'{subplot_data["label"]} (%)', capsize=5)
 
-# Set labels and title
-ax.set_xlabel('kk', fontsize=16)
-ax.set_ylabel('Error (%)', fontsize=16)
-ax.tick_params(axis='both', labelsize=16)
-ax.grid()
-ax.legend()
+# a_err_percent = calculate_relative_errors(a_values, a_1_values)
+# b_err_percent = calculate_relative_errors(b_values, b_1_values)
+# c_err_percent = calculate_relative_errors(c_values, c_1_values)
 
-# Display the plot
-plt.show()
+# num_bins = 70  # You can adjust this value based on your needs
 
-num_points_per_bin, _ = np.histogram(kk_values, bins=bin_edges)
+# # Compute histogram of h_values
+# hist, bin_edges = np.histogram(kk_values, bins=num_bins)
+# avg_a_err_percent, std_a_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, a_err_percent)
+# avg_b_err_percent, std_b_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, b_err_percent)
+# avg_c_err_percent, std_c_err_percent = calculate_average_and_std_in_bins(kk_values, bin_edges, c_err_percent)
 
-# Plot the number of points per bin
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.plot(bin_edges[:-1], num_points_per_bin, marker='o', linestyle='-', color='g')
-ax.set_xlabel('kk', fontsize=16)
-ax.set_ylabel('Number of Points', fontsize=16)
-ax.tick_params(axis='both', labelsize=16)
-ax.grid()
+# fig, axs = plt.subplots(1, 3, figsize=(16, 5))
+# # Data for plotting
+# data = [
+#     {'label': 'a_err / a', 'avg': avg_a_err_percent, 'std': std_a_err_percent},
+#     {'label': 'b_err / b', 'avg': avg_b_err_percent, 'std': std_b_err_percent},
+#     {'label': 'c_err / c', 'avg': avg_c_err_percent, 'std': std_c_err_percent}
+# ]
 
-# Display the plots
-plt.tight_layout()
-plt.show()
+# # Loop through the data and plot each subplot
+# for i, subplot_data in enumerate(data):
+#     ax = axs[i]
+#     ax.errorbar(bin_edges[:-1], subplot_data['avg'], yerr=subplot_data['std'], fmt='o', color='b', ecolor='r', capsize=5)
+#     ax.set_xlabel('kk', fontsize=16)
+#     ax.set_ylabel(f'{subplot_data["label"]} (%)', fontsize=16)
+#     ax.tick_params(axis='both', labelsize=16)
+#     ax.grid()
+
+# # Adjust subplot layout to prevent overlap
+# plt.tight_layout()
+# # Display the plot
+# plt.show()
+
+# # # Create a single figure with a 1x1 grid of subplots
+# fig = plt.figure(figsize=(16, 5))
+# ax = fig.add_subplot(111)
+# # Plot each subplot within the larger subplot
+# for subplot_data in data:
+#     ax.errorbar(bin_edges[:-1], subplot_data['avg'], yerr=subplot_data['std'], fmt='o', label=f'{subplot_data["label"]} (%)', capsize=5)
+
+# # Set labels and title
+# ax.set_xlabel('kk', fontsize=16)
+# ax.set_ylabel('Error (%)', fontsize=16)
+# ax.tick_params(axis='both', labelsize=16)
+# ax.grid()
+# ax.legend()
+
+# # Display the plot
+# plt.show()
+
+# num_points_per_bin, _ = np.histogram(kk_values, bins=bin_edges)
+
+# # Plot the number of points per bin
+# fig, ax = plt.subplots(figsize=(8, 5))
+# ax.plot(bin_edges[:-1], num_points_per_bin, marker='o', linestyle='-', color='g')
+# ax.set_xlabel('kk', fontsize=16)
+# ax.set_ylabel('Number of Points', fontsize=16)
+# ax.tick_params(axis='both', labelsize=16)
+# ax.grid()
+
+# # Display the plots
+# plt.tight_layout()
+# plt.show()
 
 
 

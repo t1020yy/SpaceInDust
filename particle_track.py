@@ -3,7 +3,7 @@ import math
 
 import cv2
 import numpy as np
-
+import sympy as sp
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 import matplotlib
 import matplotlib.pyplot as plt
@@ -79,6 +79,30 @@ class Particle_track:
         if self._parameters is None:
             self._get_parameters()
         return self._parameters[4]
+    
+    @property
+    def aa(self):
+        if self._parameters is None:
+            self._get_parameters()
+        return self._parameters[9]
+    
+    @property
+    def bb(self):
+        if self._parameters is None:
+            self._get_parameters()
+        return self._parameters[10]
+    
+    @property
+    def cc(self):
+        if self._parameters is None:
+            self._get_parameters()
+        return self._parameters[11]
+    
+    @property
+    def hg(self):
+        if self._parameters is None:
+            self._get_parameters()
+        return self._parameters[12]
 
 
     def _fit_plane_to_points(self):
@@ -192,12 +216,14 @@ class Particle_track:
         g = 9.81 # m/s^2
 
         xxs = np.roots((self.parabola[0], self.parabola[1], self.parabola[2] - grid_height))
-
         V_y0 = (2 * g * np.abs(grid_height * 10**-3 - np.min(self.flatten_3d_points[:,0,1]) * 10**-3))**0.5 
         V_x = (g / (2 * self.parabola[0] / 10**-3))**0.5
         V_y = V_x * self.parabola[1] + (xxs[0] * 10**-3 * g) / V_x
         V0 = (V_x**2 + V_y**2)**0.5
-
+        aa = self.parabola[0] 
+        bb = self.parabola[1] 
+        hg = self.grid_height
+        cc = self.parabola[2]
         if np.isreal(V_y):
             alpha = np.rad2deg(np.arctan2(V_y, V_x))
         else:
@@ -217,7 +243,7 @@ class Particle_track:
 
         valid = np.isreal(V_y) and np.isreal(V0) and np.isreal(q) 
 
-        self._parameters = (V_y0, V_y, V_x, V0, alpha, r, m, q, valid)
+        self._parameters = (V_y0, V_y, V_x, V0, alpha, r, m, q, valid, aa, bb, cc, hg)
 
 
     def draw_3d_figure(self):
