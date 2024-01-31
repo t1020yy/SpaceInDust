@@ -3,12 +3,12 @@ import math
 
 import cv2
 import numpy as np
-import sympy as sp
+
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-import matplotlib
 import matplotlib.pyplot as plt
 
 from connected_component import Connected_component
+
 
 class Particle_track:
     """Class to strore particle track"""
@@ -220,10 +220,7 @@ class Particle_track:
         V_x = (g / (2 * self.parabola[0] / 10**-3))**0.5
         V_y = V_x * self.parabola[1] + (xxs[0] * 10**-3 * g) / V_x
         V0 = (V_x**2 + V_y**2)**0.5
-        aa = self.parabola[0] 
-        bb = self.parabola[1] 
-        hg = self.grid_height
-        cc = self.parabola[2]
+
         if np.isreal(V_y):
             alpha = np.rad2deg(np.arctan2(V_y, V_x))
         else:
@@ -243,7 +240,7 @@ class Particle_track:
 
         valid = np.isreal(V_y) and np.isreal(V0) and np.isreal(q) 
 
-        self._parameters = (V_y0, V_y, V_x, V0, alpha, r, m, q, valid, aa, bb, cc, hg)
+        self._parameters = (V_y0, V_y, V_x, V0, alpha, r, m, q, valid)
 
 
     def draw_3d_figure(self):

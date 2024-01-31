@@ -194,20 +194,7 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     trajectory = calculate_trajectory(parameters)
     trajectory_2d_x = trajectory[:, 0]
     trajectory_2d_y = trajectory[:, 1]
-    trajectory_3d_z = trajectory[:, 2]
-    # h = abs(np.max(trajectory_2d_y)-np.min(trajectory_2d_y))
-    # h_1 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[-1]) 
-    # h0 = abs(np.min(trajectory_2d_y)-trajectory_2d_y[0]) 
-    # kk = min(h_1 , h0) / h
-    # dd = abs(trajectory_2d_x[0] - trajectory_2d_x[-1])
-
-    # if np.min((trajectory_2d_y[0], trajectory_2d_y[-1])) - np.min(trajectory_2d_y) < 0.1 * h or np.abs(trajectory_2d_y[0] - trajectory_2d_y[-1]) < 0.3 * h:
-    #     return None, None, None, None, None
-    
-    # h_condition_met = abs(np.max(trajectory_2d_y) - np.min(trajectory_2d_y))
-    # h_1_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[-1])
-    # h0_condition_met = abs(np.min(trajectory_2d_y) - trajectory_2d_y[0])
-    # kk_condition_met = min(h_1_condition_met, h0_condition_met) / h_condition_met
+    trajectory_3d_z = trajectory[:, 2]    
 
     trajectory_3d = np.array(list(zip(trajectory_2d_x, trajectory_2d_y, trajectory_3d_z)))
     cam1 = {
@@ -222,14 +209,19 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
         'K': parameters.cam2_K,
         'dist': parameters.cam2_dist
     }
-    # project the 3D points onto the image planes of cam1 and cam2
+    # Проецирование 3D точек на плоскость изображений для камер cam1 и cam2
     projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
 
-    h = abs(np.max(projected_points_cam1[:, 1]) - np.min(projected_points_cam1[:, 1]))
+    # Рассчитываем параметры параболы на изображении
+    # Общая высота параболы
+    parabola_height = abs(np.max(projected_points_cam1[:, 1]) - np.min(projected_points_cam1[:, 1]))
+    # Высота параболы в разных ветвях
     h_1 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[-1, 1])
-    h0 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[0, 1])
-    kk = min(h_1, h0) / h
-    dd = abs(projected_points_cam1[0, 0] - projected_points_cam1[-1, 0])
+    h_2 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[0, 1])
+    # Коэффициент отношения высот ветвей параболы
+    branches_height_ratio = min(h_1, h_2) / parabola_height
+    # Ширина параболы
+    parabola_width = abs(projected_points_cam1[0, 0] - projected_points_cam1[-1, 0])
 
     H = parameters.image_height
     W = parameters.image_width
@@ -263,5 +255,5 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     img1_1 = (img1_1 / np.max(img1_1) * 30).astype(np.uint8)
     img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
     
-    return img1_1, img2_1, trajectory_3d, kk, h, dd
+    return img1_1, img2_1, trajectory_3d, parabola_height, parabola_width, branches_height_ratio
 

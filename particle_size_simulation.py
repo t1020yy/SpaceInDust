@@ -33,27 +33,6 @@ if __name__ == "__main__":
     a_values = []
     b_values = []
     c_values = []
-    # cams_trans_vec_x_values = np.linspace(10, 30, 30)
-    # cams_rot_y_values = np.linspace(-10, 0, 30)
-
-    # for vec_x in cams_trans_vec_x_values:
-    #     for rot_ys in cams_rot_y_values:
-    #         for i in modeling_number:
-    #             param = ModelingParabolaParameters()
-    #             param.x_start_trajectory = -12 #mm
-    #             param.y_start_trajectory = 15 #mm
-    #             # param.start_speed = 0.6 * 10**3 #mm/s
-    #             param.expose_time_start = 0.050 - random.random() * 0.100
-    #             param.expose_time = 0.100
-    #             # param.particle_diameter = 0.01 + 0.01 * (i // 10)
-    #             param.particle_diameter = 0.05
-    #             param.start_angle = 55 + 30 * random.random()
-    #             param.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
-    #             param.cams_trans_vec_x = vec_x
-
-    #             param.cams_rot_y = rot_ys
-
-    #             parameters.append(param)
      
     for i in modeling_number:
         param = ModelingParabolaParameters()
@@ -74,7 +53,7 @@ if __name__ == "__main__":
     for param in parameters:
         result =get_simulated_image(param)
         if len(result) ==6: 
-            img1, img2, _, kk, h, dd = result
+            img1, img2, _, h, dd, kk = result
         else:
             pass
         a,b,c = get_a_b_c(param.start_speed, param.start_angle, param.x_start_trajectory, param.y_start_trajectory, g = 9.81*10**3)
