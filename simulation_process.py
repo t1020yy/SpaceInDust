@@ -78,7 +78,8 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
             if len(result) == 6: 
                 img1, img2, _, parabola_height, parabola_width, branches_height_ratio = result
             else:
-                pass
+                processing_results.append(None)
+                continue
 
             a, b, c = get_a_b_c(
                 simulation_parameter.start_speed,
