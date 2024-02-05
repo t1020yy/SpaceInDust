@@ -123,7 +123,7 @@ print(measurement_uncertainty_alpha1)
 # b_err_percent = calculate_relative_errors(b_values, b_1_values)
 # c_err_percent = calculate_relative_errors(c_values, c_1_values)
 
-# num_bins = 70  # You can adjust this value based on your needs
+# num_bins = 70 
 
 # # Compute histogram of h_values
 # hist, bin_edges = np.histogram(kk_values, bins=num_bins)
@@ -428,45 +428,4 @@ print(measurement_uncertainty_alpha1)
 # plt.yticks(fontsize = 15)
 # plt.gca().xaxis.get_label().set_ha('center')  
 # plt.gca().yaxis.get_label().set_ha('center')
-# plt.show()
-
-# import numpy as np
-# import matplotlib.pyplot as plt
-
-# # 示例数据
-# x_values = np.linspace(0, 10, 100)
-# a_values = np.sin(x_values)
-# b_values = 0.5 * x_values  # 请替换为你的实际数据
-
-# # 计算 (a-b)/a
-# relative_errors = (a_values - b_values) / a_values
-
-# # 计算误差，这里简单使用标准差
-# std_errors = np.random.uniform(0, 0.1, len(x_values))
-
-# # 将误差转化为百分比
-# std_errors_percent = (std_errors / a_values) * 100
-
-# # 绘制曲线
-# fig, ax1 = plt.subplots()
-
-# # 绘制 (a-b)/a 的曲线
-# ax1.plot(x_values, relative_errors, label='(a-b)/a', color='blue')
-# ax1.set_xlabel('X-axis')
-# ax1.set_ylabel('(a-b)/a', color='blue')
-# ax1.tick_params(axis='y', labelcolor='blue')
-
-# # 创建次坐标轴，用于绘制误差曲线
-# ax2 = ax1.twinx()
-# ax2.errorbar(x_values, relative_errors, yerr=std_errors_percent, fmt='o', label='Error Bar', color='red')
-
-# # 设置次坐标轴的标签
-# ax2.set_ylabel('Error (%)', color='red')
-# ax2.tick_params(axis='y', labelcolor='red')
-
-# # 添加图例
-# ax1.legend(loc='upper left')
-# ax2.legend(loc='upper right')
-
-# # 显示图形
 # plt.show()

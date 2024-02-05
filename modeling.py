@@ -188,6 +188,18 @@ def project_trajectory_3d(cam1, cam2, trajectory_3d):
     
     return projected_points_cam1[:,0,:2], projected_points_cam2[:,0,:2]
 
+def calculate_parabola_parameters(projected_points_cam1):
+    # Общая высота параболы
+    parabola_height = abs(np.max(projected_points_cam1[:, 1]) - np.min(projected_points_cam1[:, 1]))
+    # Высота параболы в разных ветвях
+    h_1 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[-1, 1])
+    h_2 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[0, 1])
+    # Коэффициент отношения высот ветвей параболы
+    branches_height_ratio = min(h_1, h_2) / parabola_height
+    # Ширина параболы
+    parabola_width = abs(projected_points_cam1[0, 0] - projected_points_cam1[-1, 0])
+
+    return parabola_height, parabola_width, branches_height_ratio
 
 def get_simulated_image(parameters: ModelingParabolaParameters):
     
@@ -213,16 +225,8 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     projected_points_cam1, projected_points_cam2 = project_trajectory_3d(cam1, cam2, trajectory_3d)
 
     # Рассчитываем параметры параболы на изображении
-    # Общая высота параболы
-    parabola_height = abs(np.max(projected_points_cam1[:, 1]) - np.min(projected_points_cam1[:, 1]))
-    # Высота параболы в разных ветвях
-    h_1 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[-1, 1])
-    h_2 = abs(np.min(projected_points_cam1[:, 1]) - projected_points_cam1[0, 1])
-    # Коэффициент отношения высот ветвей параболы
-    branches_height_ratio = min(h_1, h_2) / parabola_height
-    # Ширина параболы
-    parabola_width = abs(projected_points_cam1[0, 0] - projected_points_cam1[-1, 0])
 
+    parabola_height, parabola_width, branches_height_ratio = calculate_parabola_parameters(projected_points_cam1)  
     H = parameters.image_height
     W = parameters.image_width
 
