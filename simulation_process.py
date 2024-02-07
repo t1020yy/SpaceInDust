@@ -63,10 +63,12 @@ def process_images(simulation_parameters, img1, img2, display_processing=True):
         return None
             
 
-def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaParameters]], List[ModelingParabolaParameters]]):
+def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaParameters]], List[ModelingParabolaParameters]], check_parabola_parameters=None):
     
     simulation_parameters = []
+    simulation_parameters_to_remove = []
     simulation_parameters = generate_simulation_parameters(simulation_parameters)
+    simulation_parameters_count = len(simulation_parameters)
     processing_results = []
 
     parabola_image_parameters = []
@@ -78,33 +80,51 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
             if len(result) == 6: 
                 img1, img2, _, parabola_height, parabola_width, branches_height_ratio = result
             else:
-                processing_results.append(None)
+                simulation_parameters_to_remove.append(simulation_parameter)
                 continue
 
-            a, b, c = get_a_b_c(
-                simulation_parameter.start_speed,
-                simulation_parameter.start_angle,
-                simulation_parameter.x_start_trajectory,
-                simulation_parameter.y_start_trajectory,
-                g = 9.81*10**3
-            )
-
-            simulation_parabola_parameters.append((a, b, c))
-
-            parabola_image_parameters.append((parabola_height, parabola_width, branches_height_ratio))
+            # Проверяем изображение параболы на параметры
+            if check_parabola_parameters is not None and not check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
+                simulation_parameters_to_remove.append(simulation_parameter)
+                continue
 
             if img1 is not None and img2 is not None:
                 
                 particle = process_images(simulation_parameter, img1, img2)
 
                 if particle is not None:
+                    # Если был получен результат обработки, то сохраняем все в список результатов
+                    a, b, c = get_a_b_c(
+                        simulation_parameter.start_speed,
+                        simulation_parameter.start_angle,
+                        simulation_parameter.x_start_trajectory,
+                        simulation_parameter.y_start_trajectory,
+                        g = 9.81*10**3
+                    )
+
+                    simulation_parabola_parameters.append((a, b, c))
+
+                    parabola_image_parameters.append((parabola_height, parabola_width, branches_height_ratio))
+
                     processing_results.append((particle.Alpha, particle.V0,  particle.surface, particle.parabola, particle.parameters))
                     print(f'Сохранено {len(processing_results)} треков')
                 else:
-                    processing_results.append(None)
+                    simulation_parameters_to_remove.append(simulation_parameter)
                     print(f'Не удалось найти стереопару параболы')
             else:
+                simulation_parameters_to_remove.append(simulation_parameter)
                 print(f'Не удалось смоделировать')
+
+        # Удаление параметров, которые не подошли для моделирования
+        for simulation_parameter in simulation_parameters_to_remove:
+            simulation_parameters.remove(simulation_parameter)
+        simulation_parameters_to_remove.clear()
+
+        # Создание новых параметров для замены удаленных
+        if len(processing_results) < simulation_parameters_count:
+            simulation_parameters = generate_simulation_parameters(simulation_parameters)
+
+        # Доделать - если есть новые параметры, то нужно продолжить моделирование в цикле
 
     except Exception as ex:
         print(f'Произошла ошибка: {ex}')
