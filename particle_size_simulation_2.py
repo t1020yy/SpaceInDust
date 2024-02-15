@@ -5,8 +5,15 @@ from typing import List
 import numpy as np
 from modeling import get_simulated_image
 
-from simulation_process import check_parabola_parameters, simultaion
+from simulation_process import simultaion
 from modeling_parameters import ModelingParabolaParameters
+
+
+def check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
+    if parabola_height < 250 or parabola_width < 200 or (branches_height_ratio < 0.2 or branches_height_ratio > 0.85):
+        return False
+    else:
+        return True
 
 
 def generate_simulation_parameters(simulation_parameters: List[ModelingParabolaParameters]):
@@ -36,7 +43,7 @@ def generate_simulation_parameters(simulation_parameters: List[ModelingParabolaP
     return generated_parameters
 
 
-def adjust_parameters(parabola_image_parameters, generate_simulation_parameters, target_count_per_bin, check_parabola_parameters = check_parabola_parameters):
+def adjust_parameters(parabola_image_parameters, generated_parameters, generate_simulation_parameters, target_count_per_bin, check_parabola_parameters = check_parabola_parameters):
     # 统计每个区间内的抛物线数量
     heights = [params[0] for params in parabola_image_parameters]
     bin_edges = np.linspace(min(heights), max(heights), len(parabola_image_parameters)//target_count_per_bin + 1)
@@ -53,9 +60,13 @@ def adjust_parameters(parabola_image_parameters, generate_simulation_parameters,
             # 随机删除多余的样本
             if current_count > target_count:
                 #随机删除n个高宽对应的参数值，将删除后的参数放到new_simulation_parameters中
+                params_in_bin = []
                 
+                for parabola_parameter, simultaion_parameter in zip(parabola_image_parameters, generated_parameters):
+                    if parabola_parameter[0] >= bin_edges[i] and parabola_parameter[0] < bin_edges[i+1]:
+                        params_in_bin.append(simultaion_parameter)
                 
-                new_simulation_parameters.append(simulation_parameter)
+                new_simulation_parameters.append(random.shuffle(params_in_bin)[:target_count + 1])
             elif current_count < target_count:
                 # 生成新的样本并添加到模拟参数列表中
                 num_samples_to_add = target_count - current_count
