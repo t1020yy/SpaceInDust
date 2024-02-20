@@ -3,6 +3,11 @@ import numpy as np
 
 from modeling_parameters import ModelingParabolaParameters
 
+def check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
+    if parabola_height < 250 or parabola_width < 200 or (branches_height_ratio < 0.2 or branches_height_ratio > 0.85):
+        return False
+    else:
+        return True
 
 def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     '''
@@ -260,4 +265,6 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
     
     return img1_1, img2_1, trajectory_3d, parabola_height, parabola_width, branches_height_ratio
+
+
 
