@@ -30,8 +30,8 @@ def generate_simulation_parameters(simulation_parameters: List[ModelingParabolaP
         generating_parameter.particle_diameter = 0.05
         generating_parameter.start_angle = 55 + 20 * random.random()
         generating_parameter.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
-        # print("param.start_speed", param.start_speed)
-        # param.cams_trans_vec_x = vec_x
+        generating_parameter.cams_trans_vec_x = 40 + 90 * random.random()
+        generating_parameter.cams_rot_y = 5 - 20 * random.random()
         generated_parameters.append(generating_parameter)
     
     return generated_parameters
