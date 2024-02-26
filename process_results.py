@@ -8,10 +8,10 @@ from modeling import get_a_b_c
 
 from modeling_parameters import ModelingParabolaParameters, calculate_rotated_rotation_matrix
 
-FILE_NAME = 'modeling_results_ 2024-02-26_10-02-33.pickle'
+FILE_NAME = 'modeling_results_ 2024-02-26_15-10-05.pickle'
 
 with open(FILE_NAME, 'rb') as f:
-    simulation_parameters, processing_results, parabola_image_parameters, simulation_parabola_parameters,generated_parameters = pickle.load(f)
+    processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters = pickle.load(f)
 
 a_error = []
 b_error = []
@@ -30,10 +30,11 @@ for i in range(len(generated_parameters)):
        
 #计算两个相机的夹角
 params = ModelingParabolaParameters()
-num_samples = 200 
+num_samples = len(generated_parameters) 
 angle = []
-cams_trans_vec_x_values = [10 + 90 * random.random() for _ in range(num_samples)]
-cams_rot_y_values = [0.5 + 0.5 * random.random() for _ in range(num_samples)]
+cams_trans_vec_x_values = [param.cams_trans_vec_x for param in generated_parameters]
+cams_rot_y_values = [param.cams_rot_y for param in generated_parameters]
+
 for cams_rot_y in cams_rot_y_values:
     rot_matrix_cam1_transpose = np.transpose(params.cam1_R)
     cam2_R = calculate_rotated_rotation_matrix(params.cams_rot_x,cams_rot_y,params.cams_rot_z)
