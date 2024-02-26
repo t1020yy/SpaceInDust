@@ -248,7 +248,7 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
                         len(projected_points_cam2[projected_points_cam2[:,1] > H])
     
     if not_valid_points_1 / len(projected_points_cam1) > THRESHOLD or not_valid_points_2 / len(projected_points_cam2) > THRESHOLD:
-        return None, None, None, None, None
+        return None, None, None, None, None, None
     
     d = parameters.particle_diameter
     # Шаг интегрирования 

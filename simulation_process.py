@@ -141,24 +141,19 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
     parabola_image_parameters = []
     simulation_parabola_parameters = []
     generated_parameters=[]
-    n=0
+
     try:
         while len(processing_results) < simulation_parameters_count:
             for simulation_parameter in simulation_parameters:
                 result = get_simulated_image(simulation_parameter)
-                if len(result) == 6: 
-                    img1, img2, _, parabola_height, parabola_width, branches_height_ratio = result
-                else:
-                    simulation_parameters_to_remove.append(simulation_parameter)
-                    continue
-                if len(processing_results) >= simulation_parameters_count:
-                    break
-                # Проверяем изображение параболы на параметры
-                if check_parabola_parameters is not None and not check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
-                    simulation_parameters_to_remove.append(simulation_parameter)
-                    continue
+
+                img1, img2, _, parabola_height, parabola_width, branches_height_ratio = result                                            
                 
                 if img1 is not None and img2 is not None:
+                    # Проверяем изображение параболы на параметры
+                    if check_parabola_parameters is not None and not check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
+                        simulation_parameters_to_remove.append(simulation_parameter)
+                        continue
                     
                     particle = process_images(simulation_parameter, img1, img2)
 
@@ -179,12 +174,16 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
 
                         processing_results.append((particle.Alpha, particle.V0,  particle.surface, particle.parabola, particle.parameters))
                         print(f'Сохранено {len(processing_results)} треков')
+
+                        if len(processing_results) >= simulation_parameters_count:
+                            print(f'Получено заданное количество результатов можедирования. Выход из цикла...')
+                            break
                     else:
                         simulation_parameters_to_remove.append(simulation_parameter)
                         print(f'Не удалось найти стереопару параболы')
                 else:
                     simulation_parameters_to_remove.append(simulation_parameter)
-                    print(f'Не удалось смоделировать')      
+                    print(f'Точки параболы вышли за границу изображения')      
             # Удаление параметров, которые не подошли для моделирования
             for simulation_parameter in simulation_parameters_to_remove:
                 simulation_parameters.remove(simulation_parameter)                
@@ -211,6 +210,6 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
     finally:
         file_name = f'modeling_results_{datetime.datetime.now(): %Y-%m-%d_%H-%M-%S}.pickle'
         with open(file_name, 'wb') as f:
-            pickle.dump((simulation_parameters, processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters), f)
+            pickle.dump((processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters), f)
         print(f'Результаты сохранены в файл {file_name}')
             
