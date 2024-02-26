@@ -18,7 +18,7 @@ def find_matched_component(img1, img2):
     con_components1 = get_connected_components(preproc_img1, binary_img1)
     con_components2 = get_connected_components(preproc_img2, binary_img2)
 
-    cur_component, matched_component = find_corresponding_component(con_components1, con_components2, 0, preproc_img1, binary_img1, 600)
+    cur_component, matched_component = find_corresponding_component(con_components1, con_components2, 0, preproc_img1, binary_img1, img1.shape[1])
 
     return con_components1, con_components2, cur_component, matched_component
     
