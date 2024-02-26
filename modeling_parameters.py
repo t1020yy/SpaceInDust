@@ -1,3 +1,4 @@
+import random
 import numpy as np
 
 
@@ -23,13 +24,14 @@ class ModelingParabolaParameters:
         self.y_integration_step = 5*10**-3
 
         # Вектор переноса второй камеры в мм
-        self.cams_trans_vec_x = 5.0
+        self.cams_trans_vec_x = 10 + 90 * random.random()
+        # self.cams_trans_vec_x = random.uniform(40, 200)
         self.cams_trans_vec_y = 0.0
         self.cams_trans_vec_z = 0.0
 
         # Углы поворота второй камеры в градусах
         self.cams_rot_x = 0
-        self.cams_rot_y = 0
+        self.cams_rot_y = 0.5 + 0.5 * random.random()
         self.cams_rot_z = 0
 
         self.cam1_K = np.array([[12900., 0., 960.], 
@@ -62,7 +64,7 @@ def calculate_rotated_rotation_matrix(x: float, y: float, z: float) -> np.ndarra
     '''
     Рассчитывает матрицу поворота по трем углам Эйлера в градусах
     '''
-    # 旋转角度（弧度）
+    # 旋转角度（弧度）,x为角度
     angle_rad_x = np.radians(x)
     angle_rad_y = np.radians(y)
     angle_rad_z = np.radians(z)

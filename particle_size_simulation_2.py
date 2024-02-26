@@ -28,7 +28,7 @@ def generate_simulation_parameters(simulation_parameters: List[ModelingParabolaP
         generating_parameter.expose_time = 0.100
         # param.particle_diameter = 0.01 + 0.01 * (i // 10)
         generating_parameter.particle_diameter = 0.05
-        generating_parameter.start_angle = 55 + 30 * random.random()
+        generating_parameter.start_angle = 55 + 20 * random.random()
         generating_parameter.start_speed = (0.35 + 0.25 * random.random()) * 10**3 #mm/s
         # print("param.start_speed", param.start_speed)
         # param.cams_trans_vec_x = vec_x
@@ -39,7 +39,7 @@ def generate_simulation_parameters(simulation_parameters: List[ModelingParabolaP
 
 if __name__ == "__main__":
 
-    PARAMS_TO_GENERATE = 10
+    PARAMS_TO_GENERATE = 200
     PARAMS_DIFF_THRESHOLD_PERCENTAGE = 1 # %
     PARAMS_DIFF_THRESHOLD = math.floor(PARAMS_TO_GENERATE * PARAMS_DIFF_THRESHOLD_PERCENTAGE / 100)
     simultaion(generate_simulation_parameters, check_parabola_parameters = check_parabola_parameters)

@@ -1,122 +1,173 @@
 import pickle
+import random
 
 import numpy as np
 import sympy as sp
 from matplotlib import pyplot as plt
 from modeling import get_a_b_c
 
-def calculate_relative_errors(values, values_1):
-    return [(v - v_1) / v * 100 for v, v_1 in zip(values, values_1)]
-def calculate_average_and_std_in_bins(values, bin_edges, errors):
-    num_bins = len(bin_edges) - 1
-    avg_errors = []
-    std_errors = []
+from modeling_parameters import ModelingParabolaParameters, calculate_rotated_rotation_matrix
 
-    for i in range(num_bins):
-        indices_in_bin = np.where((values >= bin_edges[i]) & (values < bin_edges[i + 1]))[0]
-        errors_bin = [errors[j] for j in indices_in_bin]
-
-        avg_errors.append(abs(np.mean(errors_bin)))
-        std_errors.append(np.std(errors_bin))
-
-    return np.array(avg_errors), np.array(std_errors)
-
-FILE_NAME = 'modeling_results_ 2023-11-24_02-19-53.pickle'
+FILE_NAME = 'modeling_results_ 2024-02-26_10-02-33.pickle'
 
 with open(FILE_NAME, 'rb') as f:
-    parameters, result, kk_values, h_values, d_values, a_values, b_values, c_values = pickle.load(f)
+    simulation_parameters, processing_results, parabola_image_parameters, simulation_parabola_parameters,generated_parameters = pickle.load(f)
 
-angle_err = []
-velocity_err = []
-diameter = []
-start_angle = []
-start_speed = []
-cams_trans_vec_x_values = []
-angle_between_cameras_values = []
-a_err = []
-b_err = []
-c_err = []
-a_1_values = []
-b_1_values = []
-c_1_values = []
-g=9.81
-aa_values = []
-bb_values = []
-cc_values = []
-hg_values = []
-
-for i in range(len(parameters)):
+a_error = []
+b_error = []
+c_error = []
+for i in range(len(generated_parameters)):
     # if result[i] is not None:
-    if i < len(result) and result[i] is not None:
-        parameter = parameters[i]
-        particle = result[i]
+    if i < len(processing_results) and processing_results[i] is not None:
+        parameter = generated_parameters[i]
+        particle = processing_results[i]
+        parabola_parameter = simulation_parabola_parameters[i]
         a_1, b_1, c_1 = get_a_b_c(particle[1]*10**3, np.abs(particle[0]), parameter.x_start_trajectory, parameter.y_start_trajectory, g = 9.81*10**3)
-        a_1_values.append(a_1)
-        b_1_values.append(b_1)
-        c_1_values.append(c_1)
+        
+        a_error.append(a_1 - parabola_parameter[0])
+        b_error.append(b_1 - parabola_parameter[1])
+        c_error.append(c_1 - parabola_parameter[2])
+       
+#计算两个相机的夹角
+params = ModelingParabolaParameters()
+num_samples = 200 
+angle = []
+cams_trans_vec_x_values = [10 + 90 * random.random() for _ in range(num_samples)]
+cams_rot_y_values = [0.5 + 0.5 * random.random() for _ in range(num_samples)]
+for cams_rot_y in cams_rot_y_values:
+    rot_matrix_cam1_transpose = np.transpose(params.cam1_R)
+    cam2_R = calculate_rotated_rotation_matrix(params.cams_rot_x,cams_rot_y,params.cams_rot_z)
+    rotation_matrix_relative = np.dot(rot_matrix_cam1_transpose, cam2_R)
+    
+    # 计算夹角（以弧度为单位）
+    angle_rad = np.arccos((np.trace(rotation_matrix_relative) - 1) / 2)
+    # 将弧度转换为度
+    angle_deg = np.degrees(angle_rad)
+    angle.append(angle_deg)
 
-        aa_values.append(particle[5])
-        bb_values.append(particle[6])
-        cc_values.append(particle[7])
-        hg_values.append(particle[8])
 
-        angle_err.append(abs(parameter.start_angle - np.abs(particle[0])))
-        velocity_err.append(abs(parameter.start_speed * 10**-3 - particle[1]))
-        # diameter.append(parameter.particle_diameter)
-        start_angle.append(parameter.start_angle)
-        start_speed.append(parameter.start_speed)
-        cams_trans_vec_x_values.append(parameter.cams_trans_vec_x)
-
-        relative_rotation =parameter.cam2_R
-        relative_rotation_y = np.degrees(np.arctan2(relative_rotation[2, 0], relative_rotation[0, 0])) 
-        angle_between_cameras = np.abs(relative_rotation_y)
-        angle_between_cameras_values.append(angle_between_cameras)
+contour = plt.tripcolor(cams_trans_vec_x_values, angle, a_error, cmap='viridis', shading='gouraud')
+cbar = plt.colorbar(contour)
+cbar.ax.tick_params(labelsize=16) 
+plt.xlabel('cams_trans_vec_x (mm)', fontsize = 16)
+plt.ylabel('angle_between_cameras (°)', fontsize = 16)
 
 
-aa, bb, cc, hg, x00, v00, alpha1 = sp.symbols('aa bb cc hg hx00 v00 alpha1')
-x00 = ((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))
-v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*x00*g +2*x00**2*g*aa)**0.5
-alpha1 = bb + x00 * 2 * aa
-aa=np.mean(aa_values)
-bb=np.mean(bb_values)
-cc=np.mean(cc_values)
-hg=np.mean(hg_values)
-std_dev_aa = np.std(aa_values, ddof=0.5)
-std_dev_bb = np.std(bb_values, ddof=0.5)
-std_dev_cc = np.std(cc_values, ddof=0.5)
-std_dev_hg = np.std(hg_values, ddof=0.5)
+# 显示图形
+plt.show()
 
-derivative_x00_aa = (-2.0*cc + 2.0*hg)/(2*aa*(-4*aa*(cc - hg) + bb**2)**0.5) - (-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(2*aa**2)
-derivative_x00_bb = (1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1)/(2*aa)
-derivative_x00_cc = -1.0/(-4*aa*(cc - hg) + bb**2)**0.5
-derivative_x00_hg = 1.0/(-4*aa*(cc - hg) + bb**2)**0.5
-delta_a = std_dev_aa / np.sqrt(len(aa_values))
-delta_b = std_dev_bb / np.sqrt(len(bb_values))
-delta_c = std_dev_cc / np.sqrt(len(cc_values))
-delta_hg = std_dev_hg / np.sqrt(len(hg_values))
 
-measurement_uncertainty_x0 = (derivative_x00_aa**2*delta_a**2+ derivative_x00_bb**2*delta_b**2+derivative_x00_cc**2*delta_c**2+derivative_x00_hg**2*delta_hg**2)**0.5 
+# def calculate_relative_errors(values, values_1):
+#     return [(v - v_1) / v * 100 for v, v_1 in zip(values, values_1)]
+# def calculate_average_and_std_in_bins(values, bin_edges, errors):
+#     num_bins = len(bin_edges) - 1
+#     avg_errors = []
+#     std_errors = []
+
+#     for i in range(num_bins):
+#         indices_in_bin = np.where((values >= bin_edges[i]) & (values < bin_edges[i + 1]))[0]
+#         errors_bin = [errors[j] for j in indices_in_bin]
+
+#         avg_errors.append(abs(np.mean(errors_bin)))
+#         std_errors.append(np.std(errors_bin))
+
+#     return np.array(avg_errors), np.array(std_errors)
+# FILE_NAME = 'modeling_results_ 2023-11-24_02-19-53.pickle'
+
+# with open(FILE_NAME, 'rb') as f:
+#     parameters, result, kk_values, h_values, d_values, a_values, b_values, c_values = pickle.load(f)
+
+# angle_err = []
+# velocity_err = []
+# diameter = []
+# start_angle = []
+# start_speed = []
+# cams_trans_vec_x_values = []
+# angle_between_cameras_values = []
+# a_err = []
+# b_err = []
+# c_err = []
+# a_1_values = []
+# b_1_values = []
+# c_1_values = []
+# g=9.81
+# aa_values = []
+# bb_values = []
+# cc_values = []
+# hg_values = []
+
+# for i in range(len(parameters)):
+#     # if result[i] is not None:
+#     if i < len(result) and result[i] is not None:
+#         parameter = parameters[i]
+#         particle = result[i]
+#         a_1, b_1, c_1 = get_a_b_c(particle[1]*10**3, np.abs(particle[0]), parameter.x_start_trajectory, parameter.y_start_trajectory, g = 9.81*10**3)
+#         a_1_values.append(a_1)
+#         b_1_values.append(b_1)
+#         c_1_values.append(c_1)
+
+#         aa_values.append(particle[5])
+#         bb_values.append(particle[6])
+#         cc_values.append(particle[7])
+#         hg_values.append(particle[8])
+
+#         angle_err.append(abs(parameter.start_angle - np.abs(particle[0])))
+#         velocity_err.append(abs(parameter.start_speed * 10**-3 - particle[1]))
+#         # diameter.append(parameter.particle_diameter)
+#         start_angle.append(parameter.start_angle)
+#         start_speed.append(parameter.start_speed)
+#         cams_trans_vec_x_values.append(parameter.cams_trans_vec_x)
+
+#         relative_rotation =parameter.cam2_R
+#         relative_rotation_y = np.degrees(np.arctan2(relative_rotation[2, 0], relative_rotation[0, 0])) 
+#         angle_between_cameras = np.abs(relative_rotation_y)
+#         angle_between_cameras_values.append(angle_between_cameras)
+
+
+# aa, bb, cc, hg, x00, v00, alpha1 = sp.symbols('aa bb cc hg hx00 v00 alpha1')
+# x00 = ((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))
 # v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*x00*g +2*x00**2*g*aa)**0.5
-v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))*g +2*((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))**2*g*aa)**0.5
-derivative_v00_aa=3.132*(0.5*bb*(-2.0*cc + 2.0*hg)/(aa*(-4*aa*(cc - hg) + bb**2)**0.5) + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)*(-2.0*cc + 2.0*hg)/(aa*(-4*aa*(cc - hg) + bb**2)**0.5) - 0.25*bb**2/aa**2 - 0.5*bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa**2 - 0.25*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa**2 - 0.25/aa**2)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
-derivative_v00_bb=3.132*(0.5*bb*(1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1)/aa + 0.5*bb/aa + 0.25*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)*(2.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 2)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
-derivative_v00_cc=3.132*(-1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1.0*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(-4*aa*(cc - hg) + bb**2)**0.5)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
-derivative_v00_hg=3.132*(1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 + 1.0*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(-4*aa*(cc - hg) + bb**2)**0.5)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
-measurement_uncertainty_v0 = (derivative_v00_aa**2*delta_a**2+ derivative_v00_bb**2*delta_b**2+derivative_v00_cc**2*delta_c**2+derivative_v00_hg**2*delta_hg**2)**0.5 
 # alpha1 = bb + x00 * 2 * aa
-alpha1 = bb + ((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa)) * 2 * aa
-derivative_alpha1_aa=(-2.0*cc + 2.0*hg)/(-4*aa*(cc - hg) + bb**2)**0.5
-derivative_alpha1_bb=1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5
-derivative_alpha1_cc=-2.0*aa/(-4*aa*(cc - hg) + bb**2)**0.5
-derivative_alpha1_hg=2.0*aa/(-4*aa*(cc - hg) + bb**2)**0.5
-measurement_uncertainty_alpha1 = (derivative_alpha1_aa**2*delta_a**2+ derivative_alpha1_bb**2*delta_b**2+derivative_alpha1_cc**2*delta_c**2+derivative_alpha1_hg**2*delta_hg**2)**0.5 
-# alpha1 = np.rad2deg(alpha1)
+# aa=np.mean(aa_values)
+# bb=np.mean(bb_values)
+# cc=np.mean(cc_values)
+# hg=np.mean(hg_values)
+# std_dev_aa = np.std(aa_values, ddof=0.5)
+# std_dev_bb = np.std(bb_values, ddof=0.5)
+# std_dev_cc = np.std(cc_values, ddof=0.5)
+# std_dev_hg = np.std(hg_values, ddof=0.5)
 
-# print("测量值x00:", x00_values)
+# derivative_x00_aa = (-2.0*cc + 2.0*hg)/(2*aa*(-4*aa*(cc - hg) + bb**2)**0.5) - (-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(2*aa**2)
+# derivative_x00_bb = (1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1)/(2*aa)
+# derivative_x00_cc = -1.0/(-4*aa*(cc - hg) + bb**2)**0.5
+# derivative_x00_hg = 1.0/(-4*aa*(cc - hg) + bb**2)**0.5
+# delta_a = std_dev_aa / np.sqrt(len(aa_values))
+# delta_b = std_dev_bb / np.sqrt(len(bb_values))
+# delta_c = std_dev_cc / np.sqrt(len(cc_values))
+# delta_hg = std_dev_hg / np.sqrt(len(hg_values))
 
-print(measurement_uncertainty_x0)
-print(measurement_uncertainty_v0)
-print(measurement_uncertainty_alpha1)
+# measurement_uncertainty_x0 = (derivative_x00_aa**2*delta_a**2+ derivative_x00_bb**2*delta_b**2+derivative_x00_cc**2*delta_c**2+derivative_x00_hg**2*delta_hg**2)**0.5 
+# # v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*x00*g +2*x00**2*g*aa)**0.5
+# v00 = (g/(2*aa)+g*bb**2/(2*aa) + 2*bb*((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))*g +2*((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa))**2*g*aa)**0.5
+# derivative_v00_aa=3.132*(0.5*bb*(-2.0*cc + 2.0*hg)/(aa*(-4*aa*(cc - hg) + bb**2)**0.5) + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)*(-2.0*cc + 2.0*hg)/(aa*(-4*aa*(cc - hg) + bb**2)**0.5) - 0.25*bb**2/aa**2 - 0.5*bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa**2 - 0.25*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa**2 - 0.25/aa**2)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+# derivative_v00_bb=3.132*(0.5*bb*(1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1)/aa + 0.5*bb/aa + 0.25*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)*(2.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 2)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+# derivative_v00_cc=3.132*(-1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 - 1.0*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(-4*aa*(cc - hg) + bb**2)**0.5)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+# derivative_v00_hg=3.132*(1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5 + 1.0*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/(-4*aa*(cc - hg) + bb**2)**0.5)/(0.5*bb**2/aa + bb*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)/aa + 0.5*(-bb + (-4*aa*(cc - hg) + bb**2)**0.5)**2/aa + 0.5/aa)**0.5
+# measurement_uncertainty_v0 = (derivative_v00_aa**2*delta_a**2+ derivative_v00_bb**2*delta_b**2+derivative_v00_cc**2*delta_c**2+derivative_v00_hg**2*delta_hg**2)**0.5 
+# # alpha1 = bb + x00 * 2 * aa
+# alpha1 = bb + ((-bb + ((bb ** 2 - 4 * aa* (cc - hg))**0.5)) / (2 * aa)) * 2 * aa
+# derivative_alpha1_aa=(-2.0*cc + 2.0*hg)/(-4*aa*(cc - hg) + bb**2)**0.5
+# derivative_alpha1_bb=1.0*bb/(-4*aa*(cc - hg) + bb**2)**0.5
+# derivative_alpha1_cc=-2.0*aa/(-4*aa*(cc - hg) + bb**2)**0.5
+# derivative_alpha1_hg=2.0*aa/(-4*aa*(cc - hg) + bb**2)**0.5
+# measurement_uncertainty_alpha1 = (derivative_alpha1_aa**2*delta_a**2+ derivative_alpha1_bb**2*delta_b**2+derivative_alpha1_cc**2*delta_c**2+derivative_alpha1_hg**2*delta_hg**2)**0.5 
+# # alpha1 = np.rad2deg(alpha1)
+
+# # print("测量值x00:", x00_values)
+
+# print(measurement_uncertainty_x0)
+# print(measurement_uncertainty_v0)
+# print(measurement_uncertainty_alpha1)
 
 
 # a_err_percent = calculate_relative_errors(a_values, a_1_values)

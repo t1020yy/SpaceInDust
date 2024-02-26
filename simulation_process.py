@@ -74,60 +74,60 @@ def plot_parabola_histogram(parabola_image_parameters, target_count_per_bin = 2)
     plt.title('Histogram of Values in Bins')
     plt.show()
 
-def adjust_parameters(parabola_image_parameters, generated_parameters, generate_simulation_parameters, check_parabola_parameters=None):
-    # 统计每个区间内的抛物线数量
-    target_count_per_bin = 2
-    heights = [params[0] for params in parabola_image_parameters]
-    bin_edges = np.linspace(min(heights), max(heights), len(parabola_image_parameters)//target_count_per_bin + 1)
-    current_counts, _ = np.histogram(heights, bins=bin_edges)
-    new_simulation_parameters = []
+# def adjust_parameters(parabola_image_parameters, generated_parameters, generate_simulation_parameters, check_parabola_parameters=None):
+#     # 统计每个区间内的抛物线数量
+#     target_count_per_bin = 2
+#     heights = [params[0] for params in parabola_image_parameters]
+#     bin_edges = np.linspace(min(heights), max(heights), len(parabola_image_parameters)//target_count_per_bin + 1)
+#     current_counts, _ = np.histogram(heights, bins=bin_edges)
+#     new_simulation_parameters = []
 
-    # 调整区间内的样本数量
-    for i in range(len(bin_edges) - 1):
-        current_count = current_counts[i]
-        target_count = target_count_per_bin
-        if current_count > target_count:
-            params_in_bin = [simultaion_parameter for parabola_parameter, simultaion_parameter in zip(parabola_image_parameters, generated_parameters)
-                             if parabola_parameter[0] >= bin_edges[i] and parabola_parameter[0] < bin_edges[i+1]]
-            # 随机删除多余的样本
-            if params_in_bin:
-                random.shuffle(params_in_bin)
-            new_simulation_parameters.extend(params_in_bin[:target_count])
+#     # 调整区间内的样本数量
+#     for i in range(len(bin_edges) - 1):
+#         current_count = current_counts[i]
+#         target_count = target_count_per_bin
+#         if current_count > target_count:
+#             params_in_bin = [simultaion_parameter for parabola_parameter, simultaion_parameter in zip(parabola_image_parameters, generated_parameters)
+#                              if parabola_parameter[0] >= bin_edges[i] and parabola_parameter[0] < bin_edges[i+1]]
+#             # 随机删除多余的样本
+#             if params_in_bin:
+#                 random.shuffle(params_in_bin)
+#             new_simulation_parameters.extend(params_in_bin[:target_count])
 
-        elif current_count < target_count:
-            #先把原有的加入
-            params_in_bin = [simultaion_parameter for parabola_parameter, simultaion_parameter in zip(parabola_image_parameters, generated_parameters)
-                             if parabola_parameter[0] >= bin_edges[i] and parabola_parameter[0] < bin_edges[i+1]]
-            new_simulation_parameters.extend(params_in_bin)
-            # 生成新的样本并添加到模拟参数列表中
-            num_samples_to_add = target_count - current_count
-            max_attempts = 100
-            attempts = 0
-            for _ in range(num_samples_to_add):
-                simulation_parameters = []
-                while  attempts < max_attempts:
-                    new_simulation_parameters_candidate  = generate_simulation_parameters(simulation_parameters)
-                    for simulation_parameter in new_simulation_parameters_candidate :
-                        result = get_simulated_image(simulation_parameter)
-                        if len(result) == 6:
-                            img1, img2, _, parabola_height, parabola_width, branches_height_ratio = result
-                            if check_parabola_parameters is None or check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
-                                if bin_edges[i] <= parabola_height < bin_edges[i + 1]:
-                                    new_simulation_parameters.append(simulation_parameter)
-                                    break    
-                            attempts += 1
-                    else:
-                        continue
-                    if attempts == max_attempts:
-                        print("Max attempts reached. Could not find suitable simulation parameters.")
-                    break        
+#         elif current_count < target_count:
+#             #先把原有的加入
+#             params_in_bin = [simultaion_parameter for parabola_parameter, simultaion_parameter in zip(parabola_image_parameters, generated_parameters)
+#                              if parabola_parameter[0] >= bin_edges[i] and parabola_parameter[0] < bin_edges[i+1]]
+#             new_simulation_parameters.extend(params_in_bin)
+#             # 生成新的样本并添加到模拟参数列表中
+#             num_samples_to_add = target_count - current_count
+#             max_attempts = 100
+#             attempts = 0
+#             for _ in range(num_samples_to_add):
+#                 simulation_parameters = []
+#                 while  attempts < max_attempts:
+#                     new_simulation_parameters_candidate  = generate_simulation_parameters(simulation_parameters)
+#                     for simulation_parameter in new_simulation_parameters_candidate :
+#                         result = get_simulated_image(simulation_parameter)
+#                         if len(result) == 6:
+#                             img1, img2, _, parabola_height, parabola_width, branches_height_ratio = result
+#                             if check_parabola_parameters is None or check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
+#                                 if bin_edges[i] <= parabola_height < bin_edges[i + 1]:
+#                                     new_simulation_parameters.append(simulation_parameter)
+#                                     break    
+#                             attempts += 1
+#                     else:
+#                         continue
+#                     if attempts == max_attempts:
+#                         print("Max attempts reached. Could not find suitable simulation parameters.")
+#                     break        
 
-        elif current_count == target_count:
-            params_in_bin = [simultaion_parameter for parabola_parameter, simultaion_parameter in zip(parabola_image_parameters, generated_parameters)
-                             if parabola_parameter[0] >= bin_edges[i] and parabola_parameter[0] < bin_edges[i+1]]
-            new_simulation_parameters.extend(params_in_bin)
+#         elif current_count == target_count:
+#             params_in_bin = [simultaion_parameter for parabola_parameter, simultaion_parameter in zip(parabola_image_parameters, generated_parameters)
+#                              if parabola_parameter[0] >= bin_edges[i] and parabola_parameter[0] < bin_edges[i+1]]
+#             new_simulation_parameters.extend(params_in_bin)
 
-    return new_simulation_parameters    
+#     return new_simulation_parameters    
 
 def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaParameters]], List[ModelingParabolaParameters]], check_parabola_parameters=None):
     
@@ -143,7 +143,7 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
     generated_parameters=[]
     n=0
     try:
-        while len(processing_results) <= simulation_parameters_count and n<=1:
+        while len(processing_results) < simulation_parameters_count:
             for simulation_parameter in simulation_parameters:
                 result = get_simulated_image(simulation_parameter)
                 if len(result) == 6: 
@@ -195,22 +195,22 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                 simulation_parameters = generate_simulation_parameters(simulation_parameters)
                 if len(simulation_parameters) == 0:
                     break
-            if len(processing_results) == simulation_parameters_count:
-                new_simulation_parameters = adjust_parameters(parabola_image_parameters, generated_parameters, generate_simulation_parameters, check_parabola_parameters = check_parabola_parameters)
-                if not new_simulation_parameters:
-                    print("Warning: adjust_parameters returned an empty list.")
-                else:
-                    processing_results = []
-                    simulation_parameters = new_simulation_parameters
-                    n+=1
+
+            # if len(processing_results) == simulation_parameters_count:
+            #     new_simulation_parameters = adjust_parameters(parabola_image_parameters, generated_parameters, generate_simulation_parameters, check_parabola_parameters = check_parabola_parameters)
+            #     if not new_simulation_parameters:
+            #         print("Warning: adjust_parameters returned an empty list.")
+            #     else:
+            #         processing_results = []
+            #         simulation_parameters = new_simulation_parameters
+            #         n+=1
                               
     except Exception as ex:
         print(f'Произошла ошибка: {ex}')
 
     finally:
-        plot_parabola_histogram(parabola_image_parameters)
         file_name = f'modeling_results_{datetime.datetime.now(): %Y-%m-%d_%H-%M-%S}.pickle'
         with open(file_name, 'wb') as f:
-            pickle.dump((simulation_parameters, processing_results, parabola_image_parameters, simulation_parabola_parameters), f)
+            pickle.dump((simulation_parameters, processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters), f)
         print(f'Результаты сохранены в файл {file_name}')
             
