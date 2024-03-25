@@ -8,7 +8,7 @@ from modeling import get_a_b_c
 
 from modeling_parameters import ModelingParabolaParameters, calculate_rotated_rotation_matrix
 
-FILE_NAME = 'modeling_results_ 2024-02-26_15-10-05.pickle'
+FILE_NAME = 'modeling_results_ 2024-03-25_14-36-39.pickle'
 
 with open(FILE_NAME, 'rb') as f:
     processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters = pickle.load(f)
@@ -22,11 +22,14 @@ for i in range(len(generated_parameters)):
         parameter = generated_parameters[i]
         particle = processing_results[i]
         parabola_parameter = simulation_parabola_parameters[i]
-        a_1, b_1, c_1 = get_a_b_c(particle[1]*10**3, np.abs(particle[0]), parameter.x_start_trajectory, parameter.y_start_trajectory, g = 9.81*10**3)
+        # a_1, b_1, c_1 = get_a_b_c(particle[1]*10**3, np.abs(particle[0]), parameter.x_start_trajectory, parameter.y_start_trajectory, g = 9.81*10**3)
+       
+        parameter_parabola = particle[3]
+        a_2, b_2, c_2 = parameter_parabola[:-1] 
         
-        a_error.append(a_1 - parabola_parameter[0])
-        b_error.append(b_1 - parabola_parameter[1])
-        c_error.append(c_1 - parabola_parameter[2])
+        a_error.append(a_2 - parabola_parameter[0])
+        b_error.append(b_2 - parabola_parameter[1])
+        c_error.append(abs(c_2 - parabola_parameter[2]))
        
 #计算两个相机的夹角
 params = ModelingParabolaParameters()
@@ -52,6 +55,7 @@ cbar = plt.colorbar(contour)
 cbar.ax.tick_params(labelsize=16) 
 plt.xlabel('cams_trans_vec_x (mm)', fontsize = 16)
 plt.ylabel('angle_between_cameras (°)', fontsize = 16)
+plt.title('a_error(1000)', fontsize = 16)
 
 
 # 显示图形
