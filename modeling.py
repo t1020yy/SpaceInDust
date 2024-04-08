@@ -9,6 +9,15 @@ def check_parabola_parameters(parabola_height, parabola_width, branches_height_r
     else:
         return True
 
+def rotate_around_y(x, z, angle_degrees):
+    """
+    Rotate a point around the Y axis by a given angle.
+    """
+    angle_radians = np.radians(angle_degrees)
+    x_rotated = x * np.cos(angle_radians) + z * np.sin(angle_radians)
+    z_rotated = -x * np.sin(angle_radians) + z * np.cos(angle_radians)
+    return x_rotated, z_rotated
+
 def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     '''
     Возвращает координаты частицы во времени в соответствии с заданными параметрами левитации
@@ -69,7 +78,9 @@ def calculate_trajectory(parameters: ModelingParabolaParameters):
 
     while t <= intersection_end:
         if t >= intersection_start:
-            (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t, A, B, C)           
+            (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t, A, B, C)
+            if hasattr(parameters, 'rotation_angle'):  # Check if rotation_angle exists
+                x, z = rotate_around_y(x, z, parameters.rotation_angle)           
             trajectory.append((x, y, z))
         t += dt
 

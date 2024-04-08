@@ -16,7 +16,7 @@ class ModelingParabolaParameters:
         self.expose_time_start = 0.0
         self.expose_time = 0.020
         self.delta_t = 0.01
-        
+        self.rotation_angle = 0
         self.interval_time = 0.0001
 
         self.image_width = 1920
