@@ -18,14 +18,13 @@ def rotate_around_y(x, z, angle_degrees):
     z_rotated = -x * np.sin(angle_radians) + z * np.cos(angle_radians)
     return x_rotated, z_rotated
 
-def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
+def calculate_particle_position(x0, y0, v0, alpha, t, g=9.81*10**3):
     '''
     Возвращает координаты частицы во времени в соответствии с заданными параметрами левитации
     x0, y0 - координаты начала траектории (взлета, отрыва)
     v0 - начальная скорость
     alpha - начальный угол взлета
-    t - время для которого необходимо вернуть координаты
-    A, B, C - параметры плоскости, в которой перемещается частица
+    t - время для которого необходимо вернуть координаты    
     g - ускорение свободного падения
 
     Траектория движения частицы будет соответствовать параболе y = a*x**2 + b*x + c, где
@@ -37,7 +36,7 @@ def calculate_particle_position(x0, y0, v0, alpha, t, A, B, C, g=9.81*10**3):
     vy0 = -v0 * np.sin(np.radians(alpha))
     x = x0 + vx0 * t
     y = y0 + vy0 * t + 0.5 * g * t ** 2
-    z = (A * x + B * y + C)
+    z = 0
     return (x, y, z)
 
 def get_a_b_c(v0, alpha, x0, y0, g = 9.81*10**3):
@@ -78,9 +77,9 @@ def calculate_trajectory(parameters: ModelingParabolaParameters):
 
     while t <= intersection_end:
         if t >= intersection_start:
-            (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t, A, B, C)
-            if hasattr(parameters, 'rotation_angle'):  # Check if rotation_angle exists
-                x, z = rotate_around_y(x, z, parameters.rotation_angle)           
+            (x, y, z) = calculate_particle_position(x0, y0, v0, alpha, t)
+            x, z = rotate_around_y(x, z, B)
+            z = z + C
             trajectory.append((x, y, z))
         t += dt
 
