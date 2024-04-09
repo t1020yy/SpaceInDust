@@ -34,21 +34,9 @@ for i in range(len(generated_parameters)):
 #计算两个相机的夹角
 params = ModelingParabolaParameters()
 num_samples = len(generated_parameters) 
-angle = []
+angle = [param.cams_rot_y for param in generated_parameters]
 cams_trans_vec_x_values = [param.cams_trans_vec_x for param in generated_parameters]
 cams_rot_y_values = [param.cams_rot_y for param in generated_parameters]
-
-for cams_rot_y in cams_rot_y_values:
-    rot_matrix_cam1_transpose = np.transpose(params.cam1_R)
-    cam2_R = calculate_rotated_rotation_matrix(params.cams_rot_x,cams_rot_y,params.cams_rot_z)
-    rotation_matrix_relative = np.dot(rot_matrix_cam1_transpose, cam2_R)
-    
-    # 计算夹角（以弧度为单位）
-    angle_rad = np.arccos((np.trace(rotation_matrix_relative) - 1) / 2)
-    # 将弧度转换为度
-    angle_deg = np.degrees(angle_rad)
-    angle.append(angle_deg)
-
 
 contour = plt.tripcolor(cams_trans_vec_x_values, angle, a_error, cmap='viridis', shading='gouraud')
 cbar = plt.colorbar(contour)
