@@ -176,7 +176,7 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                         print(f'Сохранено {len(processing_results)} треков')
 
                         if len(processing_results) >= simulation_parameters_count:
-                            print(f'Получено заданное количество результатов можедирования. Выход из цикла...')
+                            print(f'Получено заданное количество результатов моделирования. Выход из цикла...')
                             break
                     else:
                         simulation_parameters_to_remove.append(simulation_parameter)
