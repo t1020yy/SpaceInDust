@@ -8,14 +8,19 @@ from modeling import get_a_b_c
 
 from modeling_parameters import ModelingParabolaParameters, calculate_rotated_rotation_matrix
 
-FILE_NAME = 'modeling_results_ 2024-03-25_14-36-39.pickle'
+FILE_NAME = 'modeling_results_ 2024-04-14_15-10-05.pickle'
 
 with open(FILE_NAME, 'rb') as f:
-    processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters = pickle.load(f)
+    processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters,plane_parameters = pickle.load(f)
 
 a_error = []
 b_error = []
 c_error = []
+
+plane_a_error = []
+plane_b_error = []
+plane_c_error = []
+
 for i in range(len(generated_parameters)):
     # if result[i] is not None:
     if i < len(processing_results) and processing_results[i] is not None:
@@ -30,20 +35,28 @@ for i in range(len(generated_parameters)):
         a_error.append(a_2 - parabola_parameter[0])
         b_error.append(b_2 - parabola_parameter[1])
         c_error.append(abs(c_2 - parabola_parameter[2]))
-       
-#计算两个相机的夹角
+
+#сравнить параметры плоскостей в обрабатке и моделировании
+        surface_parameters = plane_parameters[i]
+        particle_plane_parameters = particle[2]
+        
+        plane_a_error.append(surface_parameters[0] - particle_plane_parameters[0])
+        plane_b_error.append(surface_parameters[1] - particle_plane_parameters[1])
+        plane_c_error.append(surface_parameters[2] - particle_plane_parameters[2])
+      
+# #计算两个相机的夹角
 params = ModelingParabolaParameters()
 num_samples = len(generated_parameters) 
 angle = [param.cams_rot_y for param in generated_parameters]
 cams_trans_vec_x_values = [param.cams_trans_vec_x for param in generated_parameters]
 cams_rot_y_values = [param.cams_rot_y for param in generated_parameters]
 
-contour = plt.tripcolor(cams_trans_vec_x_values, angle, a_error, cmap='viridis', shading='gouraud')
+contour = plt.tripcolor(cams_trans_vec_x_values, angle, plane_c_error, cmap='viridis', shading='gouraud')
 cbar = plt.colorbar(contour)
 cbar.ax.tick_params(labelsize=16) 
 plt.xlabel('cams_trans_vec_x (mm)', fontsize = 16)
 plt.ylabel('angle_between_cameras (°)', fontsize = 16)
-plt.title('a_error(1000)', fontsize = 16)
+plt.title('plane_c_error(500)', fontsize = 16)
 
 
 # 显示图形

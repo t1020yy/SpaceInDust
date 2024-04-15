@@ -141,13 +141,14 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
     parabola_image_parameters = []
     simulation_parabola_parameters = []
     generated_parameters=[]
+    plane_parameters = []
 
     try:
         while len(processing_results) < simulation_parameters_count:
             for simulation_parameter in simulation_parameters:
                 result = get_simulated_image(simulation_parameter)
 
-                img1, img2, _, parabola_height, parabola_width, branches_height_ratio = result                                            
+                img1, img2, trajectory_3d, parabola_height, parabola_width, branches_height_ratio = result                                            
                 
                 if img1 is not None and img2 is not None:
                     # Проверяем изображение параболы на параметры
@@ -155,6 +156,7 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                         simulation_parameters_to_remove.append(simulation_parameter)
                         continue
                     
+
                     particle = process_images(simulation_parameter, img1, img2)
 
                     if particle is not None:
@@ -167,12 +169,21 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                             g = 9.81*10**3
                         )
 
+                        G = np.ones((trajectory_3d.shape[0], 3))
+                        G[:,0] = trajectory_3d[:,0]  #X
+                        G[:,1] = trajectory_3d[:,1]  #Y
+                        Z = trajectory_3d[:,2]
+                        (plane_a, plane_b, plane_c), resid, rank, s = np.linalg.lstsq(G, Z, rcond=None) 
+                        plane_parameters.append((plane_a, plane_b, plane_c))
+                      
+
                         simulation_parabola_parameters.append((a, b, c))
 
                         parabola_image_parameters.append((parabola_height, parabola_width, branches_height_ratio))
                         generated_parameters.append(simulation_parameter)
 
                         processing_results.append((particle.Alpha, particle.V0,  particle.surface, particle.parabola, particle.parameters))
+                        # print("Particle Surface Parameters:", particle.surface)
                         print(f'Сохранено {len(processing_results)} треков')
 
                         if len(processing_results) >= simulation_parameters_count:
@@ -210,6 +221,6 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
     finally:
         file_name = f'modeling_results_{datetime.datetime.now(): %Y-%m-%d_%H-%M-%S}.pickle'
         with open(file_name, 'wb') as f:
-            pickle.dump((processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters), f)
+            pickle.dump((processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters,plane_parameters), f)
         print(f'Результаты сохранены в файл {file_name}')
             
