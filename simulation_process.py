@@ -4,12 +4,14 @@ import random
 from typing import Callable, List
 from matplotlib import pyplot as plt
 
+import cv2
 import numpy as np
 
 from particle_track import Particle_track
 from modeling import get_simulated_image, get_a_b_c
 from modeling_parameters import ModelingParabolaParameters
 from image_processing import display_processing_results, find_corresponding_component, get_connected_components, preprocess_image
+
 
 def find_matched_component(img1, img2):
     preproc_img1, binary_img1 = preprocess_image(img1, 5, do_morph=False, img_to_sub=np.zeros((img1.shape), dtype=np.uint8))
@@ -62,6 +64,27 @@ def process_images(simulation_parameters, img1, img2, display_processing=True):
         return particle
     else:
         return None
+    
+
+def process_2d_points_straight(simulation_parameters, trajectory_2d_cam1, trajectory_2d_cam2):
+    
+    cameraMatrix1 = simulation_parameters.cam1_K
+    distCoeffs1 = simulation_parameters.cam1_dist
+    cameraMatrix2 = simulation_parameters.cam2_K
+    distCoeffs2 = simulation_parameters.cam2_dist
+    R = simulation_parameters.cam2_R
+    T = simulation_parameters.cam2_T   
+
+    P1 = cameraMatrix1 @ np.hstack((np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]), np.array([[0, 0, 0]]).T))
+    P2 = cameraMatrix2 @ np.hstack((R, np.array([T]).T))
+
+    points1 = np.array(trajectory_2d_cam1, dtype=float)
+    points2 = np.array(trajectory_2d_cam2, dtype=float)
+    points_4d = cv2.triangulatePoints(P1, P2, points1.T, points2.T)
+    points_3d = cv2.convertPointsFromHomogeneous(points_4d.T)
+
+    return points_3d[:, 0, :]
+
 
 def plot_parabola_histogram(parabola_image_parameters, target_count_per_bin = 2):
 
@@ -148,7 +171,7 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
             for simulation_parameter in simulation_parameters:
                 result = get_simulated_image(simulation_parameter)
 
-                img1, img2, trajectory_3d, parabola_height, parabola_width, branches_height_ratio = result                                            
+                img1, img2, trajectory_2d_cam1, trajectory_2d_cam2, trajectory_3d, parabola_height, parabola_width, branches_height_ratio = result                                            
                 
                 if img1 is not None and img2 is not None:
                     # Проверяем изображение параболы на параметры
@@ -156,6 +179,7 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                         simulation_parameters_to_remove.append(simulation_parameter)
                         continue
                     
+                    points_3d = process_2d_points_straight(simulation_parameter, trajectory_2d_cam1, trajectory_2d_cam2)
 
                     particle = process_images(simulation_parameter, img1, img2)
 

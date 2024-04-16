@@ -258,7 +258,7 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
                         len(projected_points_cam2[projected_points_cam2[:,1] > H])
     
     if not_valid_points_1 / len(projected_points_cam1) > THRESHOLD or not_valid_points_2 / len(projected_points_cam2) > THRESHOLD:
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None
     
     d = parameters.particle_diameter
     # Шаг интегрирования 
@@ -274,7 +274,7 @@ def get_simulated_image(parameters: ModelingParabolaParameters):
     img1_1 = (img1_1 / np.max(img1_1) * 30).astype(np.uint8)
     img2_1 = (img2_1 / np.max(img2_1) * 30).astype(np.uint8)
     
-    return img1_1, img2_1, trajectory_3d, parabola_height, parabola_width, branches_height_ratio
+    return img1_1, img2_1, projected_points_cam1, projected_points_cam2, trajectory_3d, parabola_height, parabola_width, branches_height_ratio
 
 
 
