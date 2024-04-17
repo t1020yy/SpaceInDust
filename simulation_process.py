@@ -165,6 +165,8 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
     simulation_parabola_parameters = []
     generated_parameters=[]
     plane_parameters = []
+    parabola_points_3d = []
+    parabola_trajectory_3d = []
 
     try:
         while len(processing_results) < simulation_parameters_count:
@@ -173,6 +175,7 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
 
                 img1, img2, trajectory_2d_cam1, trajectory_2d_cam2, trajectory_3d, parabola_height, parabola_width, branches_height_ratio = result                                            
                 
+
                 if img1 is not None and img2 is not None:
                     # Проверяем изображение параболы на параметры
                     if check_parabola_parameters is not None and not check_parabola_parameters(parabola_height, parabola_width, branches_height_ratio):
@@ -180,7 +183,8 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                         continue
                     
                     points_3d = process_2d_points_straight(simulation_parameter, trajectory_2d_cam1, trajectory_2d_cam2)
-
+                    parabola_points_3d.append(points_3d)
+                    parabola_trajectory_3d.append(trajectory_3d)
                     particle = process_images(simulation_parameter, img1, img2)
 
                     if particle is not None:
@@ -245,6 +249,6 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
     finally:
         file_name = f'modeling_results_{datetime.datetime.now(): %Y-%m-%d_%H-%M-%S}.pickle'
         with open(file_name, 'wb') as f:
-            pickle.dump((processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters,plane_parameters), f)
+            pickle.dump((processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters,plane_parameters, parabola_points_3d,parabola_trajectory_3d), f)
         print(f'Результаты сохранены в файл {file_name}')
             

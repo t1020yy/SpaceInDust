@@ -8,10 +8,10 @@ from modeling import get_a_b_c
 
 from modeling_parameters import ModelingParabolaParameters, calculate_rotated_rotation_matrix
 
-FILE_NAME = 'modeling_results_ 2024-04-14_15-10-05.pickle'
+FILE_NAME = 'modeling_results_ 2024-04-17_16-10-23.pickle'
 
 with open(FILE_NAME, 'rb') as f:
-    processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters,plane_parameters = pickle.load(f)
+    processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters,plane_parameters,parabola_points_3d, parabola_trajectory_3d = pickle.load(f)
 
 a_error = []
 b_error = []
@@ -21,6 +21,7 @@ plane_a_error = []
 plane_b_error = []
 plane_c_error = []
 
+points_3d_error = []
 for i in range(len(generated_parameters)):
     # if result[i] is not None:
     if i < len(processing_results) and processing_results[i] is not None:
@@ -28,7 +29,8 @@ for i in range(len(generated_parameters)):
         particle = processing_results[i]
         parabola_parameter = simulation_parabola_parameters[i]
         # a_1, b_1, c_1 = get_a_b_c(particle[1]*10**3, np.abs(particle[0]), parameter.x_start_trajectory, parameter.y_start_trajectory, g = 9.81*10**3)
-       
+
+#ошибка параметры параболы в обрабатке и моделировании      
         parameter_parabola = particle[3]
         a_2, b_2, c_2 = parameter_parabola[:-1] 
         
@@ -36,13 +38,16 @@ for i in range(len(generated_parameters)):
         b_error.append(b_2 - parabola_parameter[1])
         c_error.append(abs(c_2 - parabola_parameter[2]))
 
-#сравнить параметры плоскостей в обрабатке и моделировании
+#ошибка параметры плоскостей в обрабатке и моделировании
         surface_parameters = plane_parameters[i]
         particle_plane_parameters = particle[2]
         
         plane_a_error.append(surface_parameters[0] - particle_plane_parameters[0])
         plane_b_error.append(surface_parameters[1] - particle_plane_parameters[1])
         plane_c_error.append(surface_parameters[2] - particle_plane_parameters[2])
+
+#Разница между 3D-точками
+        points_3d_error.append(np.mean(np.sum(((parabola_points_3d[i] - parabola_trajectory_3d[i])**2), axis=1) ** 0.5))
       
 # #计算两个相机的夹角
 params = ModelingParabolaParameters()
@@ -51,12 +56,12 @@ angle = [param.cams_rot_y for param in generated_parameters]
 cams_trans_vec_x_values = [param.cams_trans_vec_x for param in generated_parameters]
 cams_rot_y_values = [param.cams_rot_y for param in generated_parameters]
 
-contour = plt.tripcolor(cams_trans_vec_x_values, angle, plane_c_error, cmap='viridis', shading='gouraud')
+contour = plt.tripcolor(cams_trans_vec_x_values, angle, points_3d_error, cmap='viridis', shading='gouraud')
 cbar = plt.colorbar(contour)
 cbar.ax.tick_params(labelsize=16) 
 plt.xlabel('cams_trans_vec_x (mm)', fontsize = 16)
 plt.ylabel('angle_between_cameras (°)', fontsize = 16)
-plt.title('plane_c_error(500)', fontsize = 16)
+plt.title('points_3d_error(2000)', fontsize = 16)
 
 
 # 显示图形
