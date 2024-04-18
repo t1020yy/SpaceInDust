@@ -182,8 +182,8 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                         simulation_parameters_to_remove.append(simulation_parameter)
                         continue
                     
-                    points_3d = process_2d_points_straight(simulation_parameter, trajectory_2d_cam1, trajectory_2d_cam2)
-                    parabola_points_3d.append(points_3d)
+                    # points_3d = process_2d_points_straight(simulation_parameter, trajectory_2d_cam1, trajectory_2d_cam2)
+                    # parabola_points_3d.append(points_3d)
                     parabola_trajectory_3d.append(trajectory_3d)
                     particle = process_images(simulation_parameter, img1, img2)
 
@@ -196,6 +196,8 @@ def simultaion(generate_simulation_parameters: Callable[[List[ModelingParabolaPa
                             simulation_parameter.y_start_trajectory,
                             g = 9.81*10**3
                         )
+
+                        parabola_points_3d.append(particle.triangulated_3d_points)
 
                         G = np.ones((trajectory_3d.shape[0], 3))
                         G[:,0] = trajectory_3d[:,0]  #X
