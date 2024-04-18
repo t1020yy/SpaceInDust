@@ -4,6 +4,8 @@ import random
 import numpy as np
 import sympy as sp
 from matplotlib import pyplot as plt
+from scipy.stats import wasserstein_distance_nd
+
 from modeling import get_a_b_c
 
 from modeling_parameters import ModelingParabolaParameters, calculate_rotated_rotation_matrix
@@ -47,7 +49,15 @@ for i in range(len(generated_parameters)):
         plane_c_error.append(surface_parameters[2] - particle_plane_parameters[2])
 
 #Разница между 3D-точками
-        points_3d_error.append(np.mean(np.sum(((parabola_points_3d[i] - parabola_trajectory_3d[i])**2), axis=1) ** 0.5))
+        # points_3d_error.append(np.mean(np.sum(((parabola_points_3d[i] - parabola_trajectory_3d[i])**2), axis=1) ** 0.5))
+        points_3d_error.append(
+            wasserstein_distance_nd(
+                parabola_trajectory_3d[i][np.random.choice(np.arange(parabola_trajectory_3d[i].shape[0]), 100),:],
+                parabola_points_3d[i][np.random.choice(np.arange(parabola_points_3d[i].shape[0]), 100),0,:],
+                u_weights=None,
+                v_weights=None)
+        )
+        print(points_3d_error[-1])
       
 # #计算两个相机的夹角
 params = ModelingParabolaParameters()
