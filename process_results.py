@@ -5,12 +5,14 @@ import numpy as np
 import sympy as sp
 from matplotlib import pyplot as plt
 from scipy.stats import wasserstein_distance_nd
+from scipy.spatial import KDTree
+from scipy.spatial.distance import cdist
+from scipy.spatial.distance import directed_hausdorff
 
-from modeling import get_a_b_c
 
-from modeling_parameters import ModelingParabolaParameters, calculate_rotated_rotation_matrix
+from modeling_parameters import ModelingParabolaParameters
 
-FILE_NAME = 'modeling_results_ 2024-04-17_16-10-23.pickle'
+FILE_NAME = 'modeling_results_ 2024-04-21_14-04-21.pickle'
 
 with open(FILE_NAME, 'rb') as f:
     processing_results, parabola_image_parameters, simulation_parabola_parameters, generated_parameters,plane_parameters,parabola_points_3d, parabola_trajectory_3d = pickle.load(f)
@@ -47,17 +49,34 @@ for i in range(len(generated_parameters)):
         plane_a_error.append(surface_parameters[0] - particle_plane_parameters[0])
         plane_b_error.append(surface_parameters[1] - particle_plane_parameters[1])
         plane_c_error.append(surface_parameters[2] - particle_plane_parameters[2])
+        
+        points1 = parabola_trajectory_3d[i]  
+        points2 = parabola_points_3d[i][:,0,:]  
 
+        #kd-tree
+        tree = KDTree(points1)
+        distances, indexes = tree.query(points2, k=1)
+        min_distance_kdtree = np.max(distances)
+
+        #2 Апостериорный расчет расстояния (Hausdorff distance)
+        hausdorff_distance = max(directed_hausdorff(points1, points2)[0], directed_hausdorff(points2, points1)[0])
+
+        #3  перебор (Brute-force)
+        distances = cdist(points1, points2, 'euclidean')
+        min_distance = np.mean(distances)
+
+        points_3d_error.append(min_distance)
 #Разница между 3D-точками
         # points_3d_error.append(np.mean(np.sum(((parabola_points_3d[i] - parabola_trajectory_3d[i])**2), axis=1) ** 0.5))
-        points_3d_error.append(
-            wasserstein_distance_nd(
-                parabola_trajectory_3d[i][np.random.choice(np.arange(parabola_trajectory_3d[i].shape[0]), 100),:],
-                parabola_points_3d[i][np.random.choice(np.arange(parabola_points_3d[i].shape[0]), 100),0,:],
-                u_weights=None,
-                v_weights=None)
-        )
-        print(points_3d_error[-1])
+        
+        # points_3d_error.append(
+        #     wasserstein_distance_nd(
+        #         parabola_trajectory_3d[i][np.random.choice(np.arange(parabola_trajectory_3d[i].shape[0]), 100),:],
+        #         parabola_points_3d[i][np.random.choice(np.arange(parabola_points_3d[i].shape[0]), 100),0,:],
+        #         u_weights=None,
+        #         v_weights=None)
+        # )
+        # print(points_3d_error[-1])
       
 # #计算两个相机的夹角
 params = ModelingParabolaParameters()
@@ -71,7 +90,7 @@ cbar = plt.colorbar(contour)
 cbar.ax.tick_params(labelsize=16) 
 plt.xlabel('cams_trans_vec_x (mm)', fontsize = 16)
 plt.ylabel('angle_between_cameras (°)', fontsize = 16)
-plt.title('points_3d_error(2000)', fontsize = 16)
+plt.title('points_3d_error(1000)', fontsize = 16)
 
 
 # 显示图形
